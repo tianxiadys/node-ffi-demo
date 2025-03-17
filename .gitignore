@@ -4,3 +4,5 @@
 
 cmake-build-*
 dyncall-nodejs
+node_modules
+pnpm-lock.yaml

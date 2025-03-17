@@ -1,0 +1,7 @@
+{
+  "name": "dyncall-demo",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/node": "^22.13.10"
+  }
+}
