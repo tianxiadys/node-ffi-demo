@@ -19,161 +19,292 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'use strict';
+'use strict'
 
-class UnsafeLibrary {
-  symbols
+const {
+    TypeError
+} = primordials
 
-  constructor(filename, definition) {
-  }
+const ffiIs64 = true
+const ffiIsWin = true
 
-  close() {
-  }
+function parseMode(mode) {
+    switch (mode) {
+        case 'cdecl':
+            return 'c'
+        case 'default':
+            return ':'
+        case 'fastcall':
+            return (ffiIsWin ? 'F' : 'f')
+        case 'thiscall':
+            return (ffiIsWin ? '+' : '#')
+        case 'stdcall':
+            return 's'
+        default:
+            throw new TypeError(`unsupported calling convention: ${mode}`)
+    }
+}
+
+function parseType(type) {
+    switch (type) {
+        case 'void':
+            return 'v'
+        case 'bool':
+            return 'B'
+        case 'u8':
+            return 'C'
+        case 'i8':
+            return 'c'
+        case 'u16':
+            return 'S'
+        case 'i16':
+            return 's'
+        case 'u32':
+            return 'I'
+        case 'i32':
+            return 'i'
+        case 'u64':
+            return 'L'
+        case 'i64':
+            return 'l'
+        case 'f32':
+            return 'f'
+        case 'f64':
+            return 'd'
+        case 'usize':
+            return (ffiIs64 ? 'L' : 'I')
+        case 'isize':
+            return (ffiIs64 ? 'l' : 'i')
+        case 'pointer':
+        case 'buffer':
+        case 'function':
+            return 'p'
+        default:
+            throw new TypeError(`unsupported parameter type: ${type}`)
+    }
+}
+
+function parseTypeList(params) {
+    return params.map(parseType).join('')
+}
+
+function parseDefinition(def, name) {
+    return {
+        name: (def.name || name),
+        mode: parseMode(def.mode || 'default'),
+        result: parseType(def.result || 'void'),
+        signature: parseTypeList(def.parameters || [])
+    }
+}
+
+function loadLibrary(filename) {
+    throw new Error('error')
+}
+
+function loadFunction(library, definition, name) {
+    throw new Error('error')
+}
+
+function pointerFunction(pointer, definition) {
+    throw new Error('error')
+}
+
+function callbackFunction(callback, definition) {
+    throw new Error('error')
+}
+
+function freeLibrary(library) {
+    throw new Error('error')
+}
+
+function dlopen(filename, defMap) {
+    const symbols = {}
+    const library = loadLibrary(filename)
+    for (const name in defMap) {
+        symbols[name] = loadFunction(library, defMap[name], name)
+    }
+    return {
+        symbols,
+        close() {
+            freeLibrary(library)
+        }
+    }
 }
 
 class UnsafeCallback {
-  callback
-  definition
-  pointer
+    callback
+    definition
+    pointer
 
-  constructor(definition, callback) {
-  }
+    constructor(definition, callback) {
+        this.definition = definition
+        this.callback = callback
+        this.pointer = callbackFunction(callback, definition)
+    }
 
-  close() {
-  }
+    close() {
+        throw new Error('error')
+    }
 
-  ref() {
-  }
+    ref() {
+        throw new Error('error')
+    }
 
-  unref() {
-  }
+    unref() {
+        throw new Error('error')
+    }
 
-  static threadSafe(definition, callback) {
-    throw new Error('error')
-  }
+    static threadSafe(definition, callback) {
+        throw new Error('error')
+    }
 }
 
 class UnsafeFnPointer {
-  definition
-  pointer
+    definition
+    pointer
+    #invoker
 
-  constructor(pointer, definition) {
-  }
+    constructor(pointer, definition) {
+        this.pointer = pointer
+        this.definition = definition
+        this.#invoker = pointerFunction(pointer, definition)
+    }
 
-  call(...props) {
-  }
+    call(...props) {
+        return this.#invoker(...props)
+    }
 }
 
 class UnsafePointer {
-  #rawPtr
+    #rawPtr
 
-  constructor(rawPtr) {
-    if (typeof rawPtr === 'bigint') {
-      this.#rawPtr = rawPtr
-    } else {
-      throw new Error('error')
+    constructor(value) {
+        if (typeof value === 'bigint') {
+            this.#rawPtr = value
+        }
+        throw new Error('error')
     }
-  }
 
-  static create(rawPtr) {
-    return new UnsafePointer(rawPtr)
-  }
-
-  static equals(a, b) {
-    if (a instanceof UnsafePointer && b instanceof UnsafePointer) {
-      return a.#rawPtr === b.#rawPtr
-    } else {
-      return false
+    static create(value) {
+        return new UnsafePointer(value)
     }
-  }
 
-  static of(value) {
-  }
-
-  static offset(pointer, offset) {
-    if (pointer instanceof UnsafePointer) {
-      return new UnsafePointer(pointer.#rawPtr + offset)
-    } else {
-      throw new Error('error')
+    static equals(a, b) {
+        if (a instanceof UnsafePointer && b instanceof UnsafePointer) {
+            return a.#rawPtr === b.#rawPtr
+        }
+        return false
     }
-  }
 
-  static value(pointer) {
-    if (pointer instanceof UnsafePointer) {
-      return pointer.#rawPtr
-    } else {
-      throw new Error('error')
+    static of(value) {
+        if (value instanceof UnsafePointer) {
+            return value
+        }
+        if (typeof value === 'bigint') {
+            return new UnsafePointer(value)
+        }
+        throw new Error('error')
     }
-  }
+
+    static offset(pointer, offset) {
+        if (pointer instanceof UnsafePointer) {
+            return new UnsafePointer(pointer.#rawPtr + offset)
+        }
+        throw new Error('error')
+    }
+
+    static value(pointer) {
+        if (pointer instanceof UnsafePointer) {
+            return pointer.#rawPtr
+        }
+        throw new Error('error')
+    }
 }
 
 class UnsafePointerView {
-  pointer
+    pointer
 
-  constructor(pointer) {
-  }
+    constructor(pointer) {
+        throw new Error('error')
+    }
 
-  copyInto(destination, offset) {
-  }
+    copyInto(destination, offset) {
+        throw new Error('error')
+    }
 
-  getBool(offset) {
-  }
+    getBool(offset) {
+        throw new Error('error')
+    }
 
-  getInt8(offset) {
-  }
+    getInt8(offset) {
+        throw new Error('error')
+    }
 
-  getInt16(offset) {
-  }
+    getInt16(offset) {
+        throw new Error('error')
+    }
 
-  getInt32(offset) {
-  }
+    getInt32(offset) {
+        throw new Error('error')
+    }
 
-  getBigInt64(offset) {
-  }
+    getBigInt64(offset) {
+        throw new Error('error')
+    }
 
-  getUint8(offset) {
-  }
+    getUint8(offset) {
+        throw new Error('error')
+    }
 
-  getUint16(offset) {
-  }
+    getUint16(offset) {
+        throw new Error('error')
+    }
 
-  getUint32(offset) {
-  }
+    getUint32(offset) {
+        throw new Error('error')
+    }
 
-  getBigUint64(offset) {
-  }
+    getBigUint64(offset) {
+        throw new Error('error')
+    }
 
-  getFloat32(offset) {
-  }
+    getFloat32(offset) {
+        throw new Error('error')
+    }
 
-  getFloat64(offset) {
-  }
+    getFloat64(offset) {
+        throw new Error('error')
+    }
 
-  getArrayBuffer(byteLength, offset) {
-  }
+    getArrayBuffer(byteLength, offset) {
+        throw new Error('error')
+    }
 
-  getPointer(offset) {
-  }
+    getPointer(offset) {
+        throw new Error('error')
+    }
 
-  getCString(offset) {
-  }
+    getCString(offset) {
+        throw new Error('error')
+    }
 
-  static copyInto(pointer, destination, offset) {
-  }
+    static copyInto(pointer, destination, offset) {
+        throw new Error('error')
+    }
 
-  static getArrayBuffer(pointer, byteLength, offset) {
-  }
+    static getArrayBuffer(pointer, byteLength, offset) {
+        throw new Error('error')
+    }
 
-  static getCString(pointer, offset) {
-  }
+    static getCString(pointer, offset) {
+        throw new Error('error')
+    }
 }
 
 module.exports = {
-  dlopen(filename, definition) {
-    return new UnsafeLibrary(filename, definition)
-  },
-  UnsafeCallback,
-  UnsafeFnPointer,
-  UnsafePointer,
-  UnsafePointerView,
+    dlopen,
+    UnsafeCallback,
+    UnsafeFnPointer,
+    UnsafePointer,
+    UnsafePointerView
 }
