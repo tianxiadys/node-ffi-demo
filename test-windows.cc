@@ -16,21 +16,6 @@ int main()
 {
     if (const auto a = dlLoadLibrary("user32.dll"))
     {
-        if (const auto b1 = dlFindSymbol(a, "MessageBoxW"))
-        {
-            if (const auto b2 = dcNewCallVM(4096))
-            {
-                dcMode(b2, DC_CALL_C_X86_WIN32_STD);
-                dcReset(b2);
-                dcArgPointer(b2, nullptr);
-                dcArgPointer(b2, (DCpointer)L"asd");
-                dcArgPointer(b2, (DCpointer)L"qwe");
-                dcArgInt(b2, 0);
-                const auto b3 = dcCallInt(b2, b1);
-                printf_s("MessageBoxW return:%d\n", b3);
-                dcFree(b2);
-            }
-        }
         if (const auto c1 = dlFindSymbol(a, "EnumWindows"))
         {
             if (const auto c2 = dcNewCallVM(4096))
