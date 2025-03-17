@@ -25,6 +25,16 @@ const {
     TypeError
 } = primordials
 
+const {
+    ffiCreateCallback,
+    ffiDownCall,
+    ffiFindFunction,
+    ffiFreeCallback,
+    ffiFreeLibrary,
+    ffiGetAddress,
+    ffiLoadLibrary
+} = require('node:ffi-internal')
+
 const ffiIs64 = true
 const ffiIsWin = true
 
@@ -88,9 +98,8 @@ function parseTypeList(params) {
     return params.map(parseType).join('')
 }
 
-function parseDefinition(def, name) {
+function parseDefinition(def) {
     return {
-        name: (def.name || name),
         mode: parseMode(def.mode || 'default'),
         result: parseType(def.result || 'void'),
         signature: parseTypeList(def.parameters || [])
@@ -98,23 +107,32 @@ function parseDefinition(def, name) {
 }
 
 function loadLibrary(filename) {
-    throw new Error('error')
+    return ffiLoadLibrary(filename)
 }
 
-function loadFunction(library, definition, name) {
-    throw new Error('error')
+function loadFunction(library, def, name) {
+    const parsed = parseDefinition(def)
+    const address = ffiFindFunction(library, def.name || name)
+    return (...args) => ffiDownCall(address, parsed, args)
 }
 
-function pointerFunction(pointer, definition) {
-    throw new Error('error')
+function callbackFunction(callback, def) {
+    const parsed = parseDefinition(def)
+    return ffiCreateCallback(parsed, callback)
 }
 
-function callbackFunction(callback, definition) {
-    throw new Error('error')
+function pointerFunction(pointer, def) {
+    const parsed = parseDefinition(def)
+    const address = ffiGetAddress(pointer)
+    return (...args) => ffiDownCall(address, parsed, args)
+}
+
+function freeCallback(pointer) {
+    return ffiFreeCallback(pointer)
 }
 
 function freeLibrary(library) {
-    throw new Error('error')
+    return ffiFreeLibrary(library)
 }
 
 function dlopen(filename, defMap) {
@@ -143,7 +161,7 @@ class UnsafeCallback {
     }
 
     close() {
-        throw new Error('error')
+        freeCallback(this.pointer)
     }
 
     ref() {
