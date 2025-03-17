@@ -22,21 +22,23 @@
 'use strict'
 
 const {
+    Error,
     TypeError
 } = primordials
 
 const {
+    ffiCreateBuffer,
     ffiCreateCallback,
     ffiDownCall,
     ffiFindFunction,
     ffiFreeCallback,
     ffiFreeLibrary,
     ffiGetAddress,
+    ffiIs64,
+    ffiIsLE,
+    ffiIsWin,
     ffiLoadLibrary
 } = require('node:ffi-internal')
-
-const ffiIs64 = true
-const ffiIsWin = true
 
 function parseMode(mode) {
     switch (mode) {
@@ -110,21 +112,33 @@ function loadLibrary(filename) {
     return ffiLoadLibrary(filename)
 }
 
-function loadFunction(library, def, name) {
+function loadFunction(library, name, def) {
     const parsed = parseDefinition(def)
     const address = ffiFindFunction(library, def.name || name)
     return (...args) => ffiDownCall(address, parsed, args)
-}
-
-function callbackFunction(callback, def) {
-    const parsed = parseDefinition(def)
-    return ffiCreateCallback(parsed, callback)
 }
 
 function pointerFunction(pointer, def) {
     const parsed = parseDefinition(def)
     const address = ffiGetAddress(pointer)
     return (...args) => ffiDownCall(address, parsed, args)
+}
+
+function copyBuffer() {
+}
+
+function createArrayBuffer() {
+}
+
+function createBuffer(pointer) {
+}
+
+function createCallback(callback, def) {
+    const parsed = parseDefinition(def)
+    return ffiCreateCallback(parsed, callback)
+}
+
+function createString() {
 }
 
 function freeCallback(pointer) {
@@ -139,7 +153,7 @@ function dlopen(filename, defMap) {
     const symbols = {}
     const library = loadLibrary(filename)
     for (const name in defMap) {
-        symbols[name] = loadFunction(library, defMap[name], name)
+        symbols[name] = loadFunction(library, name, defMap[name])
     }
     return {
         symbols,
@@ -157,7 +171,7 @@ class UnsafeCallback {
     constructor(definition, callback) {
         this.definition = definition
         this.callback = callback
-        this.pointer = callbackFunction(callback, definition)
+        this.pointer = createCallback(callback, definition)
     }
 
     close() {
@@ -241,81 +255,115 @@ class UnsafePointer {
 
 class UnsafePointerView {
     pointer
+    #buffer
 
     constructor(pointer) {
-        throw new Error('error')
-    }
-
-    copyInto(destination, offset) {
-        throw new Error('error')
+        this.pointer = pointer
+        this.#buffer = createBuffer(pointer)
     }
 
     getBool(offset) {
-        throw new Error('error')
+        return this.#buffer.readInt8(offset) !== 0
     }
 
     getInt8(offset) {
-        throw new Error('error')
+        return this.#buffer.readInt8(offset)
     }
 
     getInt16(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readInt16LE(offset)
+        } else {
+            return this.#buffer.readInt16BE(offset)
+        }
     }
 
     getInt32(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readInt32LE(offset)
+        } else {
+            return this.#buffer.readInt32BE(offset)
+        }
     }
 
     getBigInt64(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readBigInt64LE(offset)
+        } else {
+            return this.#buffer.readBigInt64BE(offset)
+        }
     }
 
     getUint8(offset) {
-        throw new Error('error')
+        return this.#buffer.readUint8(offset)
     }
 
     getUint16(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readUint16LE(offset)
+        } else {
+            return this.#buffer.readUint16BE(offset)
+        }
     }
 
     getUint32(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readUint32LE(offset)
+        } else {
+            return this.#buffer.readUint32BE(offset)
+        }
     }
 
     getBigUint64(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readBigUint64LE(offset)
+        } else {
+            return this.#buffer.readBigUint64BE(offset)
+        }
     }
 
     getFloat32(offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readFloatLE(offset)
+        } else {
+            return this.#buffer.readFloatBE(offset)
+        }
     }
 
     getFloat64(offset) {
-        throw new Error('error')
-    }
-
-    getArrayBuffer(byteLength, offset) {
-        throw new Error('error')
+        if (ffiIsLE) {
+            return this.#buffer.readDoubleLE(offset)
+        } else {
+            return this.#buffer.readDoubleBE(offset)
+        }
     }
 
     getPointer(offset) {
-        throw new Error('error')
+        return UnsafePointer.offset(this.pointer, offset)
+    }
+
+    copyInto(destination, offset) {
+        return copyBuffer(this.pointer, destination, offset)
+    }
+
+    getArrayBuffer(byteLength, offset) {
+        return createArrayBuffer(this.pointer, byteLength, offset)
     }
 
     getCString(offset) {
-        throw new Error('error')
+        return createString(this.pointer, offset)
     }
 
     static copyInto(pointer, destination, offset) {
-        throw new Error('error')
+        return copyBuffer(pointer, destination, offset)
     }
 
     static getArrayBuffer(pointer, byteLength, offset) {
-        throw new Error('error')
+        return createArrayBuffer(pointer, byteLength, offset)
     }
 
     static getCString(pointer, offset) {
-        throw new Error('error')
+        return createString(pointer, offset)
     }
 }
 
