@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------*-C-*-
-   libffi @VERSION@
+   libffi 3.4.7
      - Copyright (c) 2011, 2014, 2019, 2021, 2022, 2024 Anthony Green
      - Copyright (c) 1996-2003, 2007, 2008 Red Hat, Inc.
 
@@ -50,8 +50,8 @@ extern "C" {
 #endif
 
 /* Specify which architecture libffi is configured for. */
-#ifndef @TARGET@
-#define @TARGET@
+#ifndef X86_WIN64
+#define X86_WIN64
 #endif
 
 /* ---- System configuration information --------------------------------- */
@@ -61,7 +61,7 @@ extern "C" {
 #define FFI_TYPE_INT        1
 #define FFI_TYPE_FLOAT      2
 #define FFI_TYPE_DOUBLE     3
-#if @HAVE_LONG_DOUBLE@
+#if 1
 #define FFI_TYPE_LONGDOUBLE 4
 #else
 #define FFI_TYPE_LONGDOUBLE FFI_TYPE_DOUBLE
@@ -322,7 +322,7 @@ size_t ffi_java_raw_size (ffi_cif *cif) __attribute__((deprecated));
 __declspec(align(8))
 #endif
 typedef struct {
-#if @FFI_EXEC_TRAMPOLINE_TABLE@
+#if 0
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
@@ -375,7 +375,7 @@ ffi_prep_closure_loc (ffi_closure*,
 # pragma pack 8
 #endif
 typedef struct {
-#if @FFI_EXEC_TRAMPOLINE_TABLE@
+#if 0
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
@@ -400,7 +400,7 @@ typedef struct {
 } ffi_raw_closure;
 
 typedef struct {
-#if @FFI_EXEC_TRAMPOLINE_TABLE@
+#if 0
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
