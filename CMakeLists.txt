@@ -7,6 +7,7 @@ add_library(libffi STATIC
         libffi/src/prep_cif.c
         libffi/src/raw_api.c
         libffi/src/types.c
+        libffi/fixed/ffiload.c
 )
 target_include_directories(libffi PUBLIC libffi/include libffi/fixed)
 
