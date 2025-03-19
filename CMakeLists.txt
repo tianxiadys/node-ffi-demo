@@ -8,7 +8,7 @@ add_library(libffi STATIC
         libffi/src/raw_api.c
         libffi/src/types.c
 )
-target_include_directories(libffi PUBLIC libffi/include libffi/gen)
+target_include_directories(libffi PUBLIC libffi/include libffi/fixed)
 
 add_executable(test-windows test-windows.cc)
 target_link_libraries(test-windows PRIVATE libffi)

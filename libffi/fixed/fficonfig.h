@@ -1,55 +1,57 @@
-/* fficonfig.h.  Generated from fficonfig.h.in by configure.  */
-/* fficonfig.h.in.  Generated from configure.ac by autoheader.  */
+/*
+ * This file is written by Node.js,
+ * and the original code of the libffi library does not include this file.
+ */
+#ifndef LIBFFI_CONFIG_FIXED_H
+#define LIBFFI_CONFIG_FIXED_H
 
 /* Define if building universal (internal helper macro) */
-/* #undef AC_APPLE_UNIVERSAL_BUILD */
+#define AC_APPLE_UNIVERSAL_BUILD
 
 /* Define to the flags needed for the .section .eh_frame directive. */
 #define EH_FRAME_FLAGS "a"
 
 /* Define this if you want extra debugging. */
-/* #undef FFI_DEBUG */
+#define FFI_DEBUG
 
 /* Define this if you want statically defined trampolines */
 #define FFI_EXEC_STATIC_TRAMP 1
 
 /* Cannot use PROT_EXEC on this target, so, we revert to alternative means */
-/* #undef FFI_EXEC_TRAMPOLINE_TABLE */
+#define FFI_EXEC_TRAMPOLINE_TABLE
 
-/* Define this if you want to enable pax emulated trampolines (experimental)
-   */
-/* #undef FFI_MMAP_EXEC_EMUTRAMP_PAX */
+/* Define this if you want to enable pax emulated trampolines (experimental) */
+#define FFI_MMAP_EXEC_EMUTRAMP_PAX
 
 /* Cannot use malloc on this target, so, we revert to alternative means */
-/* #undef FFI_MMAP_EXEC_WRIT */
+#define FFI_MMAP_EXEC_WRIT
 
 /* Define this if you do not want support for the raw API. */
-/* #undef FFI_NO_RAW_API */
+#define FFI_NO_RAW_API
 
 /* Define this if you do not want support for aggregate types. */
-/* #undef FFI_NO_STRUCTS */
+#define FFI_NO_STRUCTS
 
 /* Define to 1 if you have the <alloca.h> header file. */
-/* #undef HAVE_ALLOCA_H */
+#define HAVE_ALLOCA_H
 
 /* Define if your compiler supports pointer authentication. */
-/* #undef HAVE_ARM64E_PTRAUTH */
+#define HAVE_ARM64E_PTRAUTH
 
 /* Define if your assembler supports .cfi_* directives. */
 #define HAVE_AS_CFI_PSEUDO_OP 1
 
 /* Define if your assembler supports .register. */
-/* #undef HAVE_AS_REGISTER_PSEUDO_OP */
+#define HAVE_AS_REGISTER_PSEUDO_OP
 
 /* Define if the compiler uses zarch features. */
-/* #undef HAVE_AS_S390_ZARCH */
+#define HAVE_AS_S390_ZARCH
 
-/* Define if your assembler and linker support unaligned PC relative relocs.
-   */
-/* #undef HAVE_AS_SPARC_UA_PCREL */
+/* Define if your assembler and linker support unaligned PC relative relocs. */
+#define HAVE_AS_SPARC_UA_PCREL
 
 /* Define if your assembler supports unwind section type. */
-/* #undef HAVE_AS_X86_64_UNWIND_SECTION_TYPE */
+#define HAVE_AS_X86_64_UNWIND_SECTION_TYPE
 
 /* Define if your assembler supports PC relative relocs. */
 #define HAVE_AS_X86_PCREL 1
@@ -58,7 +60,7 @@
 #define HAVE_DLFCN_H 1
 
 /* Define if __attribute__((visibility("hidden"))) is supported. */
-/* #undef HAVE_HIDDEN_VISIBILITY_ATTRIBUTE */
+#define HAVE_HIDDEN_VISIBILITY_ATTRIBUTE
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -67,13 +69,13 @@
 #define HAVE_LONG_DOUBLE 1
 
 /* Define if you support more than one size of the long double type */
-/* #undef HAVE_LONG_DOUBLE_VARIANT */
+#define HAVE_LONG_DOUBLE_VARIANT
 
 /* Define to 1 if you have the `memcpy' function. */
 #define HAVE_MEMCPY 1
 
 /* Define to 1 if you have the `memfd_create' function. */
-/* #undef HAVE_MEMFD_CREATE */
+#define HAVE_MEMFD_CREATE
 
 /* Define if .eh_frame sections should be read-only. */
 #define HAVE_RO_EH_FRAME 1
@@ -94,7 +96,7 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have the <sys/memfd.h> header file. */
-/* #undef HAVE_SYS_MEMFD_H */
+#define HAVE_SYS_MEMFD_H
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
@@ -147,11 +149,10 @@
 #define STDC_HEADERS 1
 
 /* Define if symbols are underscored. */
-/* #undef SYMBOL_UNDERSCORE */
+#define SYMBOL_UNDERSCORE */
 
-/* Define this if you are using Purify and want to suppress spurious messages.
-   */
-/* #undef USING_PURIFY */
+/* Define this if you are using Purify and want to suppress spurious messages. */
+#define USING_PURIFY */
 
 /* Version number of package */
 #define VERSION "3.4.7"
@@ -187,3 +188,4 @@
 #endif
 #endif
 
+#endif

@@ -1,60 +1,13 @@
-/* -----------------------------------------------------------------*-C-*-
-   libffi 3.4.7
-     - Copyright (c) 2011, 2014, 2019, 2021, 2022, 2024 Anthony Green
-     - Copyright (c) 1996-2003, 2007, 2008 Red Hat, Inc.
-
-   Permission is hereby granted, free of charge, to any person
-   obtaining a copy of this software and associated documentation
-   files (the ``Software''), to deal in the Software without
-   restriction, including without limitation the rights to use, copy,
-   modify, merge, publish, distribute, sublicense, and/or sell copies
-   of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-
-   The above copyright notice and this permission notice shall be
-   included in all copies or substantial portions of the Software.
-
-   THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-   NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-   HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-   DEALINGS IN THE SOFTWARE.
-
-   ----------------------------------------------------------------------- */
-
-/* -------------------------------------------------------------------
-   Most of the API is documented in doc/libffi.texi.
-
-   The raw API is designed to bypass some of the argument packing and
-   unpacking on architectures for which it can be avoided.  Routines
-   are provided to emulate the raw API if the underlying platform
-   doesn't allow faster implementation.
-
-   More details on the raw API can be found in:
-
-   http://gcc.gnu.org/ml/java/1999-q3/msg00138.html
-
-   and
-
-   http://gcc.gnu.org/ml/java/1999-q3/msg00174.html
-   -------------------------------------------------------------------- */
-
+/*
+ * This file is fixed by Node.js,
+ * and the original code of the libffi library only includes ffi.h.in edition.
+ */
 #ifndef LIBFFI_H
 #define LIBFFI_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* Specify which architecture libffi is configured for. */
-#ifndef X86_WIN64
-#define X86_WIN64
-#endif
-
-/* ---- System configuration information --------------------------------- */
 
 /* If these change, update src/mips/ffitarget.h. */
 #define FFI_TYPE_VOID       0
