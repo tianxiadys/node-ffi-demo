@@ -1,20 +1,32 @@
 /*
- * This file is fixed by Node.js,
- * and the original code of the libffi library only includes ffi.h.in edition.
+ * This file is an edited version by Node.js,
+ * corresponding to the ffi.h.in file in the original libffi library.
  */
 #ifndef LIBFFI_H
 #define LIBFFI_H
 
+/*
+ * The original code of libffi does not include the fficonfig.h file,
+ * but uses the automake tool to perform macro substitution,
+ * which helps reduce macro definition pollution.
+ * Node.js avoids relying on automake, so it needs to include it here.
+ */
+#include <fficonfig.h>
+
+/* The code below is basically the same as the original version. */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* ---- System configuration information --------------------------------- */
 
 /* If these change, update src/mips/ffitarget.h. */
 #define FFI_TYPE_VOID       0
 #define FFI_TYPE_INT        1
 #define FFI_TYPE_FLOAT      2
 #define FFI_TYPE_DOUBLE     3
-#if 1
+#ifdef HAVE_LONG_DOUBLE
 #define FFI_TYPE_LONGDOUBLE 4
 #else
 #define FFI_TYPE_LONGDOUBLE FFI_TYPE_DOUBLE
@@ -113,10 +125,10 @@ typedef struct _ffi_type
 
 #ifndef LIBFFI_HIDE_BASIC_TYPES
 #if SCHAR_MAX == 127
-# define ffi_type_uchar                ffi_type_uint8
-# define ffi_type_schar                ffi_type_sint8
+# define ffi_type_uchar        ffi_type_uint8
+# define ffi_type_schar        ffi_type_sint8
 #else
- #error "char size not supported"
+# error "char size not supported"
 #endif
 
 #if SHRT_MAX == 32767
@@ -126,7 +138,7 @@ typedef struct _ffi_type
 # define ffi_type_ushort       ffi_type_uint32
 # define ffi_type_sshort       ffi_type_sint32
 #else
- #error "short size not supported"
+# error "short size not supported"
 #endif
 
 #if INT_MAX == 32767
@@ -139,15 +151,15 @@ typedef struct _ffi_type
 # define ffi_type_uint         ffi_type_uint64
 # define ffi_type_sint         ffi_type_sint64
 #else
- #error "int size not supported"
+# error "int size not supported"
 #endif
 
 #if LONG_MAX == 2147483647
 # if FFI_LONG_LONG_MAX != FFI_64_BIT_MAX
- #error "no 64-bit data type supported"
+#  error "no 64-bit data type supported"
 # endif
 #elif LONG_MAX != FFI_64_BIT_MAX
- #error "long size not supported"
+# error "long size not supported"
 #endif
 
 #if LONG_MAX == 2147483647
@@ -157,7 +169,7 @@ typedef struct _ffi_type
 # define ffi_type_ulong        ffi_type_uint64
 # define ffi_type_slong        ffi_type_sint64
 #else
- #error "long size not supported"
+# error "long size not supported"
 #endif
 
 /* These are defined in types.c.  */
@@ -275,7 +287,7 @@ size_t ffi_java_raw_size (ffi_cif *cif) __attribute__((deprecated));
 __declspec(align(8))
 #endif
 typedef struct {
-#if 0
+#ifdef FFI_EXEC_TRAMPOLINE_TABLE
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
@@ -328,7 +340,7 @@ ffi_prep_closure_loc (ffi_closure*,
 # pragma pack 8
 #endif
 typedef struct {
-#if 0
+#ifdef FFI_EXEC_TRAMPOLINE_TABLE
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
@@ -353,7 +365,7 @@ typedef struct {
 } ffi_raw_closure;
 
 typedef struct {
-#if 0
+#ifdef FFI_EXEC_TRAMPOLINE_TABLE
   void *trampoline_table;
   void *trampoline_table_entry;
 #else
