@@ -7,7 +7,6 @@ add_library(libffi STATIC
         libffi/src/closures.c
         libffi/src/dlmalloc.c
         libffi/src/prep_cif.c
-        libffi/src/raw_api.c
         libffi/src/types.c
         libffi/src/tramp.c
 )

@@ -9,36 +9,36 @@
 #error "Please do not include ffitarget.h directly into your source.  Use ffi.h instead."
 #endif
 
-#ifdef __x86_64__
+#if defined _M_X64_ || defined __x86_64__
 # define X86_64
-# ifdef _WIN32
+# if defined _WIN32
 #  define X86_WIN64
-# elifdef __APPLE__
+# elif defined __APPLE__
 #  define X86_DARWIN
 # endif
 # include "../src/x86/ffitarget.h"
-#elifdef __i386__
+#elif defined _M_IX86 || defined __i386__
 # define X86
-# ifdef _WIN32
+# if defined _WIN32
 #  define X86_WIN32
-# elifdef __APPLE__
+# elif defined __APPLE__
 #  define X86_DARWIN
 # endif
 # include "../src/x86/ffitarget.h"
-#elifdef __powerpc64__
+#elif defined _M_ARM64 || defined __aarch64__
+# include "../src/aarch64/ffitarget.h"
+#elif defined _M_ARM || defined __arm__
+# include "../src/arm/ffitarget.h"
+#elif defined __powerpc64__
 # define POWERPC
 # define POWERPC64
-# ifdef __APPLE__
+# if defined __APPLE__
 #  define POWERPC_DARWIN64
 # endif
 # include "../src/powerpc/ffitarget.h"
-#elifdef __powerpc__
+#elif defined __powerpc__
 # define POWERPC
 # include "../src/powerpc/ffitarget.h"
-#elifdef __aarch64__
-# include "../src/aarch64/ffitarget.h"
-#elifdef __arm__
-# include "../src/arm/ffitarget.h"
 #endif
 
 #endif
