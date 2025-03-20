@@ -25,7 +25,7 @@ int main()
     arg_types[3] = &ffi_type_uint32; // UINT
 
     // 初始化 FFI 调用接口
-    if (ffi_prep_cif(&cif, FFI_WIN64, 4, &ffi_type_sint32, arg_types) != FFI_OK)
+    if (ffi_prep_cif(&cif, FFI_STDCALL, 4, &ffi_type_sint32, arg_types) != FFI_OK)
     {
         printf("Failed to prepare FFI interface\n");
         return 1;
