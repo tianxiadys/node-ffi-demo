@@ -32,13 +32,15 @@
 #elif defined __powerpc64__
 # define POWERPC
 # define POWERPC64
-# if defined __APPLE__
-#  define POWERPC_DARWIN64
-# endif
 # include "../src/powerpc/ffitarget.h"
 #elif defined __powerpc__
 # define POWERPC
 # include "../src/powerpc/ffitarget.h"
+#elif defined __s390x__
+# define S390X
+# include "../src/s390/ffitarget.h"
+#else
+# error "Unsupported platform"
 #endif
 
 #endif
