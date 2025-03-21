@@ -6,7 +6,7 @@
 #define LIBFFI_TARGET_FIXED_H
 
 #ifndef LIBFFI_H
-#error "Please do not include ffitarget.h directly into your source.  Use ffi.h instead."
+# error "Please do not include ffitarget.h directly into your source.  Use ffi.h instead."
 #endif
 
 #if defined _M_X64_ || defined __x86_64__
