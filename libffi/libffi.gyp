@@ -2,7 +2,8 @@
     'targets': [
         {
             'target_name': 'libffi',
-            'type': '<(library)',
+            'type': 'shared_library',
+            'product_dir': 'build',
             'include_dirs': [
                 'fixed',
                 'include'

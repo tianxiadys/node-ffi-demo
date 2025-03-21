@@ -2,6 +2,7 @@
 .vs
 .vscode
 
-*build*
+gyp-build-*
+cmake-build-*
 node_modules
 pnpm-lock.yaml
