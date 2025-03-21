@@ -2,8 +2,8 @@
  * This file is written by Node.js,
  * and the original code of the libffi library does not include this file.
  */
-#ifndef LIBFFI_LOAD_FIXED_H
-#define LIBFFI_LOAD_FIXED_H
+#ifndef LIBFFI_FIXED_LOAD_H
+#define LIBFFI_FIXED_LOAD_H
 
 #ifdef __cplusplus
 extern "C" {

@@ -2,8 +2,8 @@
  * This file is written by Node.js,
  * and the original code of the libffi library does not include this file.
  */
-#ifndef LIBFFI_TARGET_FIXED_H
-#define LIBFFI_TARGET_FIXED_H
+#ifndef LIBFFI_FIXED_TARGET_H
+#define LIBFFI_FIXED_TARGET_H
 
 #ifndef LIBFFI_H
 # error "Please do not include ffitarget.h directly into your source.  Use ffi.h instead."

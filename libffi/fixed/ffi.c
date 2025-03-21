@@ -9,7 +9,7 @@
 #  include "../src/x86/ffi64.c"
 # endif
 #elif defined _M_IX86 || defined __i386__
-#  include "../src/x86/ffi.c"
+# include "../src/x86/ffi.c"
 #elif defined _M_ARM64 || defined __aarch64__
 # include "../src/aarch64/ffi.c"
 #elif defined _M_ARM || defined __arm__

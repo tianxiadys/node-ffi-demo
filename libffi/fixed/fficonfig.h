@@ -2,8 +2,8 @@
  * This file is written by Node.js,
  * and the original code of the libffi library does not include this file.
  */
-#ifndef LIBFFI_CONFIG_FIXED_H
-#define LIBFFI_CONFIG_FIXED_H
+#ifndef LIBFFI_FIXED_CONFIG_H
+#define LIBFFI_FIXED_CONFIG_H
 
 #define FFI_NO_RAW_API 1
 #define FFI_NO_STRUCTS 1
