@@ -26,8 +26,10 @@
 # endif
 # include "../src/x86/ffitarget.h"
 #elif defined _M_ARM64 || defined __aarch64__
+# define AARCH64
 # include "../src/aarch64/ffitarget.h"
 #elif defined _M_ARM || defined __arm__
+# define ARM
 # include "../src/arm/ffitarget.h"
 #elif defined __powerpc64__
 # define POWERPC
