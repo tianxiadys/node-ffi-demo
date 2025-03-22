@@ -5,13 +5,7 @@
 #ifndef LIBFFI_FIXED_CONFIG_H
 #define LIBFFI_FIXED_CONFIG_H
 
-// 似乎没用
-// /* Define if building universal (internal helper macro) */
-// /* #undef AC_APPLE_UNIVERSAL_BUILD */
-
 // 确定没用
-// /* Define to 1 if you have the `memcpy' function. */
-// #define HAVE_MEMCPY 1
 // /* Define to the sub-directory where libtool stores uninstalled libraries. */
 // #define LT_OBJDIR ".libs/"
 // /* Name of package */
@@ -64,6 +58,43 @@
 // /* Define this if you are using Purify and want to suppress spurious messages.
 //    */
 // /* #undef USING_PURIFY */
+//
+// 间接没用
+// /* Define to 1 if you have the `memcpy' function. */
+// #define HAVE_MEMCPY 1
+// /* Define if building universal (internal helper macro) */
+// /* #undef AC_APPLE_UNIVERSAL_BUILD */
+// /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+//    significant byte first (like Motorola and SPARC, unlike Intel). */
+// #if defined AC_APPLE_UNIVERSAL_BUILD
+// # if defined __BIG_ENDIAN__
+// #  define WORDS_BIGENDIAN 1
+// # endif
+// #else
+// # ifndef WORDS_BIGENDIAN
+// /* #  undef WORDS_BIGENDIAN */
+// # endif
+// #endif
+// /* Define this if you do not want support for aggregate types. */
+// /* #undef FFI_NO_STRUCTS */
+//
+// 无人支持
+// /* Define if you support more than one size of the long double type */
+// /* #undef HAVE_LONG_DOUBLE_VARIANT */
+// /* Define to 1 if you have the <sys/memfd.h> header file. */
+// /* #undef HAVE_SYS_MEMFD_H */
+// 没实际作用
+// #if !(defined __APPLE__ && defined __aarch64__)
+// /* Define if you have the long double type and it is bigger than a double */
+// #define HAVE_LONG_DOUBLE 1
+// #endif
+
+
+//暂时用不到
+/* Define this if you do not want support for the raw API. */
+#define FFI_NO_RAW_API 1
+/* Define this if you want extra debugging. */
+#undef FFI_DEBUG
 
 
 //所有支持的平台都有标准头
@@ -72,6 +103,11 @@
    backward compatibility; new code need not use it. */
 #define STDC_HEADERS 1
 
+
+#if !defined _MSC_VER
+/* Define if __attribute__((visibility("hidden"))) is supported. */
+#define HAVE_HIDDEN_VISIBILITY_ATTRIBUTE 1
+#endif
 
 #if !defined _WIN32
 /* Define to 1 if you have the <alloca.h> header file. */
@@ -85,14 +121,15 @@
 #if defined __linux__
 /* Define this if you want statically defined trampolines */
 #define FFI_EXEC_STATIC_TRAMP 1
+/* Define to 1 if you have the `memfd_create' function. */
+#define HAVE_MEMFD_CREATE 1
 #endif
+
 
 
 /* Define to the flags needed for the .section .eh_frame directive. */
 #define EH_FRAME_FLAGS "a"
 
-/* Define this if you want extra debugging. */
-/* #undef FFI_DEBUG */
 /* Cannot use PROT_EXEC on this target, so, we revert to alternative means */
 /* #undef FFI_EXEC_TRAMPOLINE_TABLE */
 /* Define this if you want to enable pax emulated trampolines (experimental)
@@ -102,11 +139,7 @@
 /* Cannot use malloc on this target, so, we revert to alternative means */
 /* #undef FFI_MMAP_EXEC_WRIT */
 
-/* Define this if you do not want support for the raw API. */
-/* #undef FFI_NO_RAW_API */
 
-/* Define this if you do not want support for aggregate types. */
-/* #undef FFI_NO_STRUCTS */
 /* Define if your compiler supports pointer authentication. */
 /* #undef HAVE_ARM64E_PTRAUTH */
 /* Define if your assembler supports .cfi_* directives. */
@@ -124,58 +157,32 @@
 #define HAVE_AS_X86_PCREL 1
 
 
-/* Define if __attribute__((visibility("hidden"))) is supported. */
-#define HAVE_HIDDEN_VISIBILITY_ATTRIBUTE 1
 
 
-/* Define if you have the long double type and it is bigger than a double */
-#define HAVE_LONG_DOUBLE 1
 
-/* Define if you support more than one size of the long double type */
-/* #undef HAVE_LONG_DOUBLE_VARIANT */
 
-/* Define to 1 if you have the `memfd_create' function. */
-#define HAVE_MEMFD_CREATE 1
 /* Define if .eh_frame sections should be read-only. */
 #define HAVE_RO_EH_FRAME 1
 
 
 
-/* Define to 1 if you have the <sys/memfd.h> header file. */
-/* #undef HAVE_SYS_MEMFD_H */
 
-
-
-
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
-#  define WORDS_BIGENDIAN 1
+#ifndef _MSC_VER
+# ifdef LIBFFI_ASM
+#  ifdef __APPLE__
+#   define FFI_HIDDEN(name) .private_extern name
+#  else
+#   define FFI_HIDDEN(name) .hidden name
+#  endif
+# else
+#  define FFI_HIDDEN __attribute__((visibility("hidden")))
 # endif
 #else
-# ifndef WORDS_BIGENDIAN
-/* #  undef WORDS_BIGENDIAN */
+# ifdef LIBFFI_ASM
+#  define FFI_HIDDEN(name)
+# else
+#  define FFI_HIDDEN
 # endif
-#endif
-
-#ifdef HAVE_HIDDEN_VISIBILITY_ATTRIBUTE
-#ifdef LIBFFI_ASM
-#ifdef __APPLE__
-#define FFI_HIDDEN(name) .private_extern name
-#else
-#define FFI_HIDDEN(name) .hidden name
-#endif
-#else
-#define FFI_HIDDEN __attribute__ ((visibility ("hidden")))
-#endif
-#else
-#ifdef LIBFFI_ASM
-#define FFI_HIDDEN(name)
-#else
-#define FFI_HIDDEN
-#endif
 #endif
 
 #endif
