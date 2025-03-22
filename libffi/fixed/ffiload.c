@@ -10,6 +10,10 @@
 void* ffi_load_library(const char* libPath)
 {
     wchar_t wPath[MAX_PATH];
+    if (libPath == NULL)
+    {
+        return GetModuleHandleW(NULL);
+    }
     if (MultiByteToWideChar(CP_UTF8, 0, libPath, -1, wPath, MAX_PATH))
     {
         return LoadLibraryW(wPath);
