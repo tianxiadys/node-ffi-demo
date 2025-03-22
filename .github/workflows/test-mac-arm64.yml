@@ -1,4 +1,4 @@
-name: Test Linux x64
+name: Test Mac arm64
 on:
     workflow_dispatch:
 jobs:
