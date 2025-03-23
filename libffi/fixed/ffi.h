@@ -6,14 +6,10 @@
 #define LIBFFI_H
 
 /*
- * The original code of libffi does not include the fficonfig.h file,
- * but uses the automake tool to perform macro substitution,
- * which helps reduce macro definition pollution.
- * Node.js avoids relying on automake, so it needs to include it here.
+ * included by Node.js,
+ * which is the only modification made to this file.
  */
 #include <fficonfig.h>
-
-/* The code below is basically the same as the original version. */
 
 #ifdef __cplusplus
 extern "C" {
