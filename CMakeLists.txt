@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
-project(NodeFfiDemo)
+project(NodeFfiDemo C CXX ASM)
 
-add_library(libffi
+add_library(libffi SHARED
         libffi/fixed/ffi.c
         libffi/fixed/ffiasm.S
         libffi/fixed/ffiload.c
