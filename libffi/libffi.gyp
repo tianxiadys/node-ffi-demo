@@ -42,9 +42,6 @@
                     'process_outputs_as_sources': 1,
                 }],
                 'msvs_settings': {
-                    'VCLinkerTool': {
-                        'TargetMachine': '3',
-                    },
                     'MASM': {
                         'UseSafeExceptionHandlers': 'true',
                     },
