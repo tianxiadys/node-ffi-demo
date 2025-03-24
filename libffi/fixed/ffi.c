@@ -14,12 +14,6 @@
 # include "../src/aarch64/ffi.c"
 #elif defined _M_ARM || defined __arm__
 # include "../src/arm/ffi.c"
-#elif defined __powerpc64__
-# include "../src/powerpc/ffi.c"
-# include "../src/powerpc/ffi_linux64.c"
-#elif defined __powerpc__
-# include "../src/powerpc/ffi.c"
-# include "../src/powerpc/ffi_sysc.c"
 #else
 # error "Unsupported platform"
 #endif

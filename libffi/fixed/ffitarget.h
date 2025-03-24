@@ -31,13 +31,6 @@
 #elif defined _M_ARM || defined __arm__
 # define ARM
 # include "../src/arm/ffitarget.h"
-#elif defined __powerpc64__
-# define POWERPC
-# define POWERPC64
-# include "../src/powerpc/ffitarget.h"
-#elif defined __powerpc__
-# define POWERPC
-# include "../src/powerpc/ffitarget.h"
 #else
 # error "Unsupported platform"
 #endif

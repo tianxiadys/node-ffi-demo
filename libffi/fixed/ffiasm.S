@@ -28,17 +28,6 @@
 # else
 #  include "../src/arm/sysv.S"
 # endif
-#elif defined __powerpc__
-# if defined _AIX
-#  include "../src/powerpc/aix.S"
-#  include "../src/powerpc/aix_closure.S"
-# elif defined __powerpc64__
-#  include "../src/powerpc/linux64.S"
-#  include "../src/powerpc/linux64_closure.S"
-# else
-#  include "../src/powerpc/sysv.S"
-#  include "../src/powerpc/ppc_closure.S"
-# endif
 #else
 # error "Unsupported platform"
 #endif
