@@ -1,4 +1,4 @@
 const ffi = require('ffi')
 console.log(ffi)
-console.log(ffi.ffiGetAddress(1))
+console.log(ffi.ffiGetAddress(1n))
 

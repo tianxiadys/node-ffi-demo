@@ -23,7 +23,7 @@
 
 const {
   ffiGetAddress
-} = require('node:ffi-internal')
+} = internalBinding('ffi')
 
 module.exports = {
   ffiGetAddress

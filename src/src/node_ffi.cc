@@ -184,13 +184,13 @@ namespace node::ffi
                     Local<Context> context,
                     void* priv)
     {
+        SetMethod(context, target, "ffiGetAddress", GetAddress);
         //         Isolate* isolate = context->GetIsolate();
         //         Realm* realm = Realm::GetCurrent(context);
         //         FfiBindingData* const binding_data =
         //             realm->AddBindingData<FfiBindingData>(target);
         //         if (binding_data == nullptr) return;
         //
-        SetMethod(context, target, "ffiGetAddress", GetAddress);
         //         SetMethod(context, target, "getBufferPointer", GetBufferPointer);
         //         SetMethod(context, target, "makeCall", MakeCall);
         //         SetMethod(context, target, "getSymbol", GetSymbol);
@@ -285,16 +285,16 @@ namespace node::ffi
         //               .Check();
     }
 
-    void RegisterExternalReferences(ExternalReferenceRegistry* registry)
-    {
-        registry->Register(GetAddress);
-        // registry->Register(GetBufferPointer);
-        // registry->Register(FfiSignature::New);
-        // registry->Register(MakeCall);
-        // registry->Register(GetSymbol);
-        // registry->Register(GetLibrary);
-    }
+    // void RegisterExternalReferences(ExternalReferenceRegistry* registry)
+    // {
+    //     registry->Register(GetAddress);
+    //     // registry->Register(GetBufferPointer);
+    //     // registry->Register(FfiSignature::New);
+    //     // registry->Register(MakeCall);
+    //     // registry->Register(GetSymbol);
+    //     // registry->Register(GetLibrary);
+    // }
 }
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
-NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::RegisterExternalReferences)
+// NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::RegisterExternalReferences)
