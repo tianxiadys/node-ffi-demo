@@ -21,6 +21,15 @@
 
 'use strict'
 
+const {
+  ffiGetAddress
+} = require('node:ffi-internal')
+
+module.exports = {
+  ffiGetAddress
+}
+
+
 // const {
 //     Error,
 //     TypeError
