@@ -1,5 +1,5 @@
 /*
-* This file is written by Node.js,
+ * This file is written by Node.js,
  * and the original code of the libffi library does not include this file.
  */
 #ifndef LIBFFI_FIXED_TARGET_H

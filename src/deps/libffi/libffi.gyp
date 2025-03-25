@@ -9,7 +9,6 @@
     'sources': [
       'fixed/ffi.c',
       'fixed/ffiasm.S',
-      'fixed/ffiload.c',
       'src/closures.c',
       'src/debug.c',
       # dlmalloc.c has already been included in closures.c

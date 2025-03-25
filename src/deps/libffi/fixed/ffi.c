@@ -1,5 +1,5 @@
 /*
-* This file is written by Node.js,
+ * This file is written by Node.js,
  * and the original code of the libffi library does not include this file.
  */
 #if defined _M_X64 || defined __x86_64__

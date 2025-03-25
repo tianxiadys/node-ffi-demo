@@ -285,16 +285,16 @@ namespace node::ffi
         //               .Check();
     }
 
-    // void RegisterExternalReferences(ExternalReferenceRegistry* registry)
-    // {
-    //     registry->Register(GetAddress);
-    //     // registry->Register(GetBufferPointer);
-    //     // registry->Register(FfiSignature::New);
-    //     // registry->Register(MakeCall);
-    //     // registry->Register(GetSymbol);
-    //     // registry->Register(GetLibrary);
-    // }
+    void RegisterExtRefer(ExternalReferenceRegistry* registry)
+    {
+        registry->Register(GetAddress);
+        // registry->Register(GetBufferPointer);
+        // registry->Register(FfiSignature::New);
+        // registry->Register(MakeCall);
+        // registry->Register(GetSymbol);
+        // registry->Register(GetLibrary);
+    }
 }
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
-// NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::RegisterExternalReferences)
+NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::RegisterExtRefer)
