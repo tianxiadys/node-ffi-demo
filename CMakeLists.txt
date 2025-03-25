@@ -13,4 +13,5 @@ target_include_directories(nodeffi PRIVATE
 )
 target_compile_definitions(nodeffi PRIVATE
         NODE_WANT_INTERNALS=1
+        NODE_ENABLE_FFI=1
 )

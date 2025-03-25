@@ -11,19 +11,30 @@
 #include "v8-primitive.h"
 #include "v8-template.h"
 
-using v8::Array;
-using v8::ArrayBuffer;
-using v8::BigInt;
-using v8::Boolean;
-using v8::Context;
-using v8::FunctionCallbackInfo;
-using v8::FunctionTemplate;
-using v8::Isolate;
-using v8::Number;
-using v8::SharedArrayBuffer;
-
 namespace node::ffi
 {
+    using v8::Array;
+    using v8::ArrayBuffer;
+    using v8::BigInt;
+    using v8::Boolean;
+    using v8::Context;
+    using v8::FunctionCallbackInfo;
+    using v8::FunctionTemplate;
+    using v8::Isolate;
+    using v8::String::Utf8Value;
+    using v8::Number;
+    using v8::External;
+    using v8::SharedArrayBuffer;
+    using binding::DLib;
+
+    void LoadLibrary(const FunctionCallbackInfo<Value>& args)
+    {
+        CHECK(args[0]->IsString());
+        Isolate* isolate = args.GetIsolate();
+        Utf8Value libName(isolate, args[0]);
+        DLib* lib = new DLib(*libName, DLib::kDefaultFlags);
+    }
+
     // binding::DLib* FfiBindingData::GetLibrary(std::string fname)
     // {
     //     auto result = libraries_.find(fname);
