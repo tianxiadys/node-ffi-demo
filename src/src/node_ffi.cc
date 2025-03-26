@@ -20,7 +20,7 @@
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "env-inl.h"
-#include "node_binding.h"
+#include "node_ffi.h"
 #include "v8.h"
 
 namespace node::ffi
@@ -33,6 +33,69 @@ namespace node::ffi
     using v8::Local;
     using v8::Object;
     using v8::Value;
+
+    ffi_type* FFIFunction::parseType(char code)
+    {
+        switch (code)
+        {
+        case 'v':
+            return &ffi_type_void;
+        case 'C':
+            return &ffi_type_uint8;
+        case 'c':
+            return &ffi_type_sint8;
+        case 'S':
+            return &ffi_type_uint16;
+        case 's':
+            return &ffi_type_sint16;
+        case 'I':
+            return &ffi_type_uint32;
+        case 'B':
+        case 'i':
+            return &ffi_type_sint32;
+        case 'L':
+            return &ffi_type_uint64;
+        case 'l':
+            return &ffi_type_sint64;
+        case 'f':
+            return &ffi_type_float;
+        case 'd':
+            return &ffi_type_double;
+        case 'p':
+            return &ffi_type_pointer;
+        default:
+            UNREACHABLE("Bad FFI type");
+        }
+    }
+
+    void FFIFunction::initDefine(const char* defStr)
+    {
+        const auto defLen = strlen(defStr);
+        const auto valLen = defLen - 1;
+        if (defLen < 1)
+        {
+            UNREACHABLE("Bad defStr size");
+        }
+        if (valLen > 0)
+        {
+            argVals = std::make_unique<ffi_raw[]>(valLen);
+            argTypes = std::make_unique<ffi_type*[]>(valLen);
+            argPtrs = std::make_unique<void*[]>(valLen);
+        }
+        else
+        {
+            argVals = nullptr;
+            argTypes = nullptr;
+            argPtrs = nullptr;
+        }
+        retType = parseType(defStr[0]);
+        for (int i = 0; i < valLen; i++)
+        {
+            argTypes[i] = parseType(defStr[i + 1]);
+            argPtrs[i] = &argVals[i];
+        }
+        ffi_prep_cif(&ffiDef, FFI_DEFAULT_ABI, valLen, retType, argTypes);
+    }
 
     void LoadLibrary(const FunctionCallbackInfo<Value>& args)
     {
