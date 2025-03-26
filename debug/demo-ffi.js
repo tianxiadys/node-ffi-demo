@@ -1,4 +1,4 @@
-const ffi = require('ffi')
+const ffi = require('node:ffi')
 console.log(ffi)
-console.log(ffi.ffiGetAddress(1n))
+console.log(ffi.dlopen('user32'))
 
