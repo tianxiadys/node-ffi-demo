@@ -22,18 +22,46 @@
 'use strict'
 
 const {
-  ffiGetAddress
+  TypeError
+} = primordials
+
+const {
+  FindSymbol,
+  FreeLibrary,
+  LoadLibrary
 } = internalBinding('ffi')
 
+function loadLibrary(filename) {
+  if (typeof filename !== 'string') {
+    throw new TypeError('filename must be string')
+  }
+  const result = LoadLibrary(filename)
+  if (!result) {
+    throw new TypeError('dlopen failed')
+  }
+  return result
+}
+
+// function loadFunction(library, name, def) {
+//   const parsed = parseDefinition(def)
+//   const address = ffiFindFunction(library, def.name || name)
+//   return (...args) => ffiDownCall(address, parsed, args)
+// }
+
+function dlopen(filename, defMap) {
+  const symbols = {}
+  const library = loadLibrary(filename)
+  // for (const name in defMap) {
+  //   symbols[name] = loadFunction(library, name, defMap[name])
+  // }
+  return { library }
+}
+
 module.exports = {
-  ffiGetAddress
+  dlopen
 }
 
 
-// const {
-//     Error,
-//     TypeError
-// } = primordials
 //
 // const {
 //   ffiCreateBuffer,
@@ -117,15 +145,6 @@ module.exports = {
 //   }
 // }
 //
-// function loadLibrary(filename) {
-//   return ffiLoadLibrary(filename)
-// }
-//
-// function loadFunction(library, name, def) {
-//   const parsed = parseDefinition(def)
-//   const address = ffiFindFunction(library, def.name || name)
-//   return (...args) => ffiDownCall(address, parsed, args)
-// }
 //
 // function pointerFunction(pointer, def) {
 //   const parsed = parseDefinition(def)
@@ -158,19 +177,6 @@ module.exports = {
 //   return ffiFreeLibrary(library)
 // }
 //
-// function dlopen(filename, defMap) {
-//   const symbols = {}
-//   const library = loadLibrary(filename)
-//   for (const name in defMap) {
-//     symbols[name] = loadFunction(library, name, defMap[name])
-//   }
-//   return {
-//     symbols,
-//     close() {
-//       freeLibrary(library)
-//     }
-//   }
-// }
 //
 // class UnsafeCallback {
 //   callback
