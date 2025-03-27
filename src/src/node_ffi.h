@@ -10,17 +10,12 @@ namespace node::ffi
 {
     class FFIFunction
     {
-        ffi_cif ffiDef{};
-        ffi_raw retVal{};
-        ffi_type* retType{};
-        std::unique_ptr<ffi_raw[]> argVals;
-        std::unique_ptr<ffi_type**> argTypes;
-        std::unique_ptr<void*[]> argPtrs;
-
-        static ffi_type* parseType(char code);
+        ffi_cif ffiCif{};
+        std::unique_ptr<ffi_type*[]> typeArr;
 
     public:
-        void initDefine(const char* defStr);
+        static ffi_type* parseType(char code);
+        explicit FFIFunction(const char* defStr);
     };
 
     class FFILibrary

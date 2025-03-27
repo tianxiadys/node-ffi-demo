@@ -5,4 +5,6 @@
 gyp-build-*
 cmake-build-*
 node_modules
+
+*.asm
 pnpm-lock.yaml

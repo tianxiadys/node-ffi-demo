@@ -19,27 +19,16 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include "env-inl.h"
 #include "node_ffi.h"
-#include "v8.h"
 
 namespace node::ffi
 {
-    using binding::DLib;
-    using v8::Context;
-    using v8::External;
-    using v8::FunctionCallbackInfo;
-    using v8::Isolate;
-    using v8::Local;
-    using v8::Object;
-    using v8::Value;
-
     FFIFunction::FFIFunction(const char* defStr)
     {
         const auto defLen = strlen(defStr);
         if (defLen < 1)
         {
-            UNREACHABLE("Bad defStr size");
+            //UNREACHABLE("Bad defStr size");
         }
         typeArr = std::make_unique<ffi_type*[]>(defLen);
         for (int i = 0; i < defLen; i++)
@@ -50,7 +39,7 @@ namespace node::ffi
             (&ffiCif, FFI_DEFAULT_ABI, defLen - 1, typeArr[0], &typeArr[1]);
         if (ffiRet != FFI_OK)
         {
-            UNREACHABLE("ffi_prep_cif Failed");
+            //UNREACHABLE("ffi_prep_cif Failed");
         }
     }
 
@@ -84,74 +73,8 @@ namespace node::ffi
         case 'p':
             return &ffi_type_pointer;
         default:
-            UNREACHABLE("Bad FFI type");
+            //UNREACHABLE("Bad FFI type");
+            return nullptr;
         }
-    }
-
-    void LoadLibrary(const FunctionCallbackInfo<Value>& args)
-    {
-        CHECK(args[0]->IsString());
-        Isolate* isolate = args.GetIsolate();
-        Utf8Value libName(isolate, args[0]);
-        DLib* libObj = new DLib(*libName, DLib::kDefaultFlags);
-        if (libObj->Open())
-        {
-            args.GetReturnValue()
-                .Set(External::New(isolate, libObj));
-        }
-        else
-        {
-            delete libObj;
-            args.GetReturnValue()
-                .SetNull();
-        }
-    }
-
-    void FindSymbol(const FunctionCallbackInfo<Value>& args)
-    {
-        CHECK(args[0]->IsExternal());
-        CHECK(args[1]->IsString());
-        Isolate* isolate = args.GetIsolate();
-        Utf8Value symName(isolate, args[1]);
-        DLib* libObj = static_cast<DLib*>(args[0].As<External>()->Value());
-        void* symAddr = libObj->GetSymbolAddress(*symName);
-        if (symAddr)
-        {
-            args.GetReturnValue()
-                .Set(External::New(isolate, symAddr));
-        }
-        else
-        {
-            args.GetReturnValue()
-                .SetNull();
-        }
-    }
-
-    void FreeLibrary(const FunctionCallbackInfo<Value>& args)
-    {
-        CHECK(args[0]->IsExternal());
-        DLib* libObj = static_cast<DLib*>(args[0].As<External>()->Value());
-        libObj->Close();
-        delete libObj;
-    }
-
-    void Initialize(Local<Object> target,
-                    Local<Value> unused,
-                    Local<Context> context,
-                    void* priv)
-    {
-        SetMethod(context, target, "FindSymbol", FindSymbol);
-        SetMethod(context, target, "FreeLibrary", FreeLibrary);
-        SetMethod(context, target, "LoadLibrary", LoadLibrary);
-    }
-
-    void Register(ExternalReferenceRegistry* registry)
-    {
-        registry->Register(FindSymbol);
-        registry->Register(FreeLibrary);
-        registry->Register(LoadLibrary);
     }
 }
-
-NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
-NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::Register)
