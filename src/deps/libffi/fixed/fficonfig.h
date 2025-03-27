@@ -6,7 +6,6 @@
 #define LIBFFI_FIXED_CONFIG_H
 
 #define EH_FRAME_FLAGS "a"
-#define FFI_NO_RAW_API 1
 #define FFI_STATIC_BUILD 1
 #define HAVE_AS_X86_PCREL 1
 #define NO_JAVA_RAW_API 1

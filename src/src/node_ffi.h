@@ -7,13 +7,22 @@
 namespace node::ffi
 {
     using binding::DLib;
+    using v8::ArrayBuffer;
+    using v8::BigInt;
     using v8::Context;
     using v8::External;
     using v8::FunctionCallbackInfo;
     using v8::Isolate;
     using v8::Local;
+    using v8::Number;
     using v8::Object;
     using v8::Value;
+
+    class FFILibrary : public DLib
+    {
+    public:
+        explicit FFILibrary(const char* libPath);
+    };
 
     class FFIDefinition
     {
@@ -30,13 +39,12 @@ namespace node::ffi
     {
     public:
         explicit FFIFunction(const char* defStr, void* address);
-        void setParam(int i, const void* ptr);
+        void setParam(int i, const Local<Value>& value);
         void doInvoke(ffi_raw* result);
 
     protected:
         void (*invoker)(){};
         std::unique_ptr<ffi_raw[]> datas;
-        std::unique_ptr<void*[]> args;
     };
 
     class FFICallback : public FFIDefinition

@@ -26,6 +26,19 @@
 
 namespace node::ffi
 {
+    void* GetAddress(const Local<Value>& value)
+    {
+        if (value->IsExternal())
+        {
+            return value.As<External>()->Value();
+        }
+        if (value->IsArrayBuffer())
+        {
+            return value.As<ArrayBuffer>()->Data();
+        }
+        return nullptr;
+    }
+
     FFIDefinition::FFIDefinition(const char* defStr)
     {
         const auto size = strlen(defStr);
@@ -69,9 +82,6 @@ namespace node::ffi
             case 'f':
                 types[i] = &ffi_type_float;
                 break;
-            case 'd':
-                types[i] = &ffi_type_double;
-                break;
             case 'p':
                 types[i] = &ffi_type_pointer;
                 break;
@@ -90,21 +100,52 @@ namespace node::ffi
     {
         invoker = FFI_FN(address);
         datas = std::make_unique<ffi_raw[]>(cif.nargs);
-        args = std::make_unique<void*[]>(cif.nargs);
-        for (int i = 0; i < cif.nargs; i++)
-        {
-            args[i] = &datas[i];
-        }
     }
 
-    void FFIFunction::setParam(const int i, const void* ptr)
+    void FFIFunction::setParam(const int i, const Local<Value>& value)
     {
-        memcpy(datas[i].data, ptr, cif.arg_types[i]->size);
+        const auto type = cif.arg_types[i];
+        if (type == &ffi_type_void)
+        {
+            datas[i].uint = 0;
+        }
+        else if (type == &ffi_type_uint8
+            || type == &ffi_type_uint16
+            || type == &ffi_type_uint32)
+        {
+            datas[i].uint = value.As<Number>()->Value();
+        }
+        else if (type == &ffi_type_sint8
+            || type == &ffi_type_sint16
+            || type == &ffi_type_sint32)
+        {
+            datas[i].sint = value.As<Number>()->Value();
+        }
+        else if (type == &ffi_type_float)
+        {
+            datas[i].flt = value.As<Number>()->Value();
+        }
+        else if (type == &ffi_type_uint64)
+        {
+            datas[i].uint = value.As<BigInt>()->Uint64Value();
+        }
+        else if (type == &ffi_type_sint64)
+        {
+            datas[i].sint = value.As<BigInt>()->Int64Value();
+        }
+        else if (type == &ffi_type_pointer)
+        {
+            datas[i].ptr = GetAddress(value);
+        }
+        else
+        {
+            UNREACHABLE("Bad FFI type");
+        }
     }
 
     void FFIFunction::doInvoke(ffi_raw* result)
     {
-        ffi_call(&cif, invoker, result, args.get());
+        ffi_raw_call(&cif, invoker, result, datas.get());
     }
 
     FFICallback::FFICallback(const char* defStr)
@@ -122,14 +163,14 @@ namespace node::ffi
         }
     }
 
-    void FFICallback::RawCallback(ffi_cif*, void* ret, void** args, void* data)
-    {
-        const auto self = static_cast<FFICallback*>(data);
-    }
-
     Local<External> FFICallback::getAddress(Isolate* isolate) const
     {
         return External::New(isolate, address);
+    }
+
+    void FFICallback::RawCallback(ffi_cif*, void* ret, void** args, void* data)
+    {
+        const auto self = static_cast<FFICallback*>(data);
     }
 
     FFICallback::~FFICallback()
