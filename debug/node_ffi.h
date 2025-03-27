@@ -12,10 +12,11 @@ namespace node::ffi
 {
     class FFIDefinition
     {
-        static constexpr auto ABI = FFI_DEFAULT_ABI;
-
     public:
         explicit FFIDefinition(const char* defStr);
+
+    protected:
+        static constexpr auto ABI = FFI_DEFAULT_ABI;
         ffi_cif cif{};
         std::unique_ptr<ffi_type*[]> types;
     };
@@ -23,16 +24,25 @@ namespace node::ffi
     class FFIFunction : public FFIDefinition
     {
     public:
+        explicit FFIFunction(const char* defStr, void* address);
+        void setParam(int i, const void* ptr);
+        void doInvoke(ffi_raw* result);
+
+    protected:
+        void (*invoker)(){};
+        std::unique_ptr<ffi_raw[]> datas;
+        std::unique_ptr<void*[]> args;
     };
 
     class FFICallback : public FFIDefinition
     {
-        static constexpr auto FCS = sizeof(ffi_closure);
-
     public:
         explicit FFICallback(const char* defStr);
-        static void RawCallback(ffi_cif*, void*, void**, void*);
         ~FFICallback();
+
+    protected:
+        static constexpr auto FCS = sizeof(ffi_closure);
+        static void RawCallback(ffi_cif*, void*, void**, void*);
         ffi_closure* pfc{};
         void* address{};
     };

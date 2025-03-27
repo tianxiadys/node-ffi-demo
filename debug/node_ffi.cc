@@ -82,6 +82,28 @@ namespace node::ffi
         }
     }
 
+    FFIFunction::FFIFunction(const char* defStr, void* address)
+        : FFIDefinition(defStr)
+    {
+        invoker = FFI_FN(address);
+        datas = std::make_unique<ffi_raw[]>(cif.nargs);
+        args = std::make_unique<void*[]>(cif.nargs);
+        for (int i = 0; i < cif.nargs; i++)
+        {
+            args[i] = &datas[i];
+        }
+    }
+
+    void FFIFunction::setParam(const int i, const void* ptr)
+    {
+        memcpy(datas[i].data, ptr, cif.arg_types[i]->size);
+    }
+
+    void FFIFunction::doInvoke(ffi_raw* result)
+    {
+        ffi_call(&cif, invoker, result, args.get());
+    }
+
     FFICallback::FFICallback(const char* defStr)
         : FFIDefinition(defStr)
     {
