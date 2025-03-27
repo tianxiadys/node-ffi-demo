@@ -2,6 +2,6 @@
 
 int main()
 {
-    const auto a = new node::ffi::FFIFunction("");
+    const auto a = new node::ffi::FFIDefinition("L");
     const auto b = 0;
 }

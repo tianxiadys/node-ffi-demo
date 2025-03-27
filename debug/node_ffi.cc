@@ -23,58 +23,64 @@
 
 namespace node::ffi
 {
-    FFIFunction::FFIFunction(const char* defStr)
+    FFIDefinition::FFIDefinition(const char* defStr)
     {
         const auto defLen = strlen(defStr);
         if (defLen < 1)
         {
-            //UNREACHABLE("Bad defStr size");
+            UNREACHABLE("Bad defStr size");
         }
-        typeArr = std::make_unique<ffi_type*[]>(defLen);
+        types = std::make_unique<ffi_type*[]>(defLen);
         for (int i = 0; i < defLen; i++)
         {
-            typeArr[i] = parseType(defStr[i]);
+            //These field definitions refer to dyncall
+            switch (defStr[i])
+            {
+            case 'v':
+                types[i] = &ffi_type_void;
+                break;
+            case 'C':
+                types[i] = &ffi_type_uint8;
+                break;
+            case 'c':
+                types[i] = &ffi_type_sint8;
+                break;
+            case 'S':
+                types[i] = &ffi_type_uint16;
+                break;
+            case 's':
+                types[i] = &ffi_type_sint16;
+                break;
+            case 'I':
+                types[i] = &ffi_type_uint32;
+                break;
+            case 'i':
+                types[i] = &ffi_type_sint32;
+                break;
+            case 'L':
+                types[i] = &ffi_type_uint64;
+                break;
+            case 'l':
+                types[i] = &ffi_type_sint64;
+                break;
+            case 'f':
+                types[i] = &ffi_type_float;
+                break;
+            case 'd':
+                types[i] = &ffi_type_double;
+                break;
+            case 'p':
+                types[i] = &ffi_type_pointer;
+                break;
+            default:
+                UNREACHABLE("Bad FFI type");
+            }
         }
-        const auto ffiRet = ffi_prep_cif
-            (&ffiCif, FFI_DEFAULT_ABI, defLen - 1, typeArr[0], &typeArr[1]);
+        const auto ffiRet = ffi_prep_cif(
+            &cif, FFI_DEFAULT_ABI, defLen - 1, types[0], &types[1]);
         if (ffiRet != FFI_OK)
         {
-            //UNREACHABLE("ffi_prep_cif Failed");
-        }
-    }
-
-    ffi_type* FFIFunction::parseType(char code)
-    {
-        switch (code)
-        {
-        case 'v':
-            return &ffi_type_void;
-        case 'C':
-            return &ffi_type_uint8;
-        case 'c':
-            return &ffi_type_sint8;
-        case 'S':
-            return &ffi_type_uint16;
-        case 's':
-            return &ffi_type_sint16;
-        case 'I':
-            return &ffi_type_uint32;
-        case 'B':
-        case 'i':
-            return &ffi_type_sint32;
-        case 'L':
-            return &ffi_type_uint64;
-        case 'l':
-            return &ffi_type_sint64;
-        case 'f':
-            return &ffi_type_float;
-        case 'd':
-            return &ffi_type_double;
-        case 'p':
-            return &ffi_type_pointer;
-        default:
-            //UNREACHABLE("Bad FFI type");
-            return nullptr;
+            UNREACHABLE("ffi_prep_cif Failed");
         }
     }
 }

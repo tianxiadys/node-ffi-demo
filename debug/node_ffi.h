@@ -6,16 +6,24 @@
 #include "ffi.h"
 #include <memory>
 
+#define UNREACHABLE(x) static_assert(x)
+
 namespace node::ffi
 {
+    class FFIDefinition
+    {
+    public:
+        explicit FFIDefinition(const char* defStr);
+        ffi_cif cif{};
+        std::unique_ptr<ffi_type*[]> types;
+    };
+
     class FFIFunction
     {
-        ffi_cif ffiCif{};
-        std::unique_ptr<ffi_type*[]> typeArr;
+    };
 
-    public:
-        static ffi_type* parseType(char code);
-        explicit FFIFunction(const char* defStr);
+    class FFICallback
+    {
     };
 }
 
