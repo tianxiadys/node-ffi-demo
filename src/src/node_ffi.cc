@@ -39,6 +39,30 @@ namespace node::ffi
         return nullptr;
     }
 
+    template <class T>
+    T* ReadExternal(const Local<Value>& value)
+    {
+        CHECK(value->IsExternal());
+        return static_cast<T*>(value.As<External>()->Value());
+    }
+
+    unique_ptr<Utf8Value> ReadString(Isolate* isolate,
+                                     const Local<Value>& value)
+    {
+        CHECK(value->IsString());
+        return make_unique<Utf8Value>(isolate, value);
+    }
+
+    FFILibrary::FFILibrary(const char* libPath)
+        : DLib(libPath, kDefaultFlags)
+    {
+    }
+
+    FFILibrary::~FFILibrary()
+    {
+        Close();
+    }
+
     FFIDefinition::FFIDefinition(const char* defStr)
     {
         const auto size = strlen(defStr);
@@ -46,7 +70,7 @@ namespace node::ffi
         {
             UNREACHABLE("Bad defStr size");
         }
-        types = std::make_unique<ffi_type*[]>(size);
+        types = make_unique<ffi_type*[]>(size);
         for (int i = 0; i < size; i++)
         {
             //These field definitions refer to dyncall
@@ -99,7 +123,7 @@ namespace node::ffi
         : FFIDefinition(defStr)
     {
         invoker = FFI_FN(address);
-        datas = std::make_unique<ffi_raw[]>(cif.nargs);
+        datas = make_unique<ffi_raw[]>(cif.nargs);
     }
 
     void FFIFunction::setParam(const int i, const Local<Value>& value)
@@ -163,11 +187,6 @@ namespace node::ffi
         }
     }
 
-    Local<External> FFICallback::getAddress(Isolate* isolate) const
-    {
-        return External::New(isolate, address);
-    }
-
     void FFICallback::RawCallback(ffi_cif*, void* ret, void** args, void* data)
     {
         const auto self = static_cast<FFICallback*>(data);
@@ -183,18 +202,17 @@ namespace node::ffi
 
     void LoadLibrary(const FunctionCallbackInfo<Value>& args)
     {
-        CHECK(args[0]->IsString());
-        Isolate* isolate = args.GetIsolate();
-        Utf8Value libName(isolate, args[0]);
-        DLib* libObj = new DLib(*libName, DLib::kDefaultFlags);
-        if (libObj->Open())
+        const auto isolate = args.GetIsolate();
+        const auto path = ReadString(isolate, args[1]);
+        const auto library = new FFILibrary(path->out());
+        if (library->Open())
         {
             args.GetReturnValue()
-                .Set(External::New(isolate, libObj));
+                .Set(External::New(isolate, library));
         }
         else
         {
-            delete libObj;
+            delete library;
             args.GetReturnValue()
                 .SetNull();
         }
@@ -202,16 +220,14 @@ namespace node::ffi
 
     void FindSymbol(const FunctionCallbackInfo<Value>& args)
     {
-        CHECK(args[0]->IsExternal());
-        CHECK(args[1]->IsString());
-        Isolate* isolate = args.GetIsolate();
-        Utf8Value symName(isolate, args[1]);
-        DLib* libObj = static_cast<DLib*>(args[0].As<External>()->Value());
-        void* symAddr = libObj->GetSymbolAddress(*symName);
-        if (symAddr)
+        const auto isolate = args.GetIsolate();
+        const auto library = ReadExternal<FFILibrary>(args[0]);
+        const auto symbol = ReadString(isolate, args[1]);
+        const auto address = library->GetSymbolAddress(symbol->out());
+        if (address)
         {
             args.GetReturnValue()
-                .Set(External::New(isolate, symAddr));
+                .Set(External::New(isolate, address));
         }
         else
         {
@@ -222,10 +238,7 @@ namespace node::ffi
 
     void FreeLibrary(const FunctionCallbackInfo<Value>& args)
     {
-        CHECK(args[0]->IsExternal());
-        DLib* libObj = static_cast<DLib*>(args[0].As<External>()->Value());
-        libObj->Close();
-        delete libObj;
+        delete ReadExternal<FFILibrary>(args[0]);
     }
 
     void Initialize(Local<Object> target,

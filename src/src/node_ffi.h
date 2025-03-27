@@ -7,6 +7,8 @@
 namespace node::ffi
 {
     using binding::DLib;
+    using std::make_unique;
+    using std::unique_ptr;
     using v8::ArrayBuffer;
     using v8::BigInt;
     using v8::Context;
@@ -22,6 +24,7 @@ namespace node::ffi
     {
     public:
         explicit FFILibrary(const char* libPath);
+        ~FFILibrary();
     };
 
     class FFIDefinition
@@ -32,7 +35,7 @@ namespace node::ffi
     protected:
         static constexpr auto ABI = FFI_DEFAULT_ABI;
         ffi_cif cif{};
-        std::unique_ptr<ffi_type*[]> types;
+        unique_ptr<ffi_type*[]> types;
     };
 
     class FFIFunction : public FFIDefinition
@@ -44,14 +47,13 @@ namespace node::ffi
 
     protected:
         void (*invoker)(){};
-        std::unique_ptr<ffi_raw[]> datas;
+        unique_ptr<ffi_raw[]> datas;
     };
 
     class FFICallback : public FFIDefinition
     {
     public:
         explicit FFICallback(const char* defStr);
-        Local<External> getAddress(Isolate* isolate) const;
         ~FFICallback();
 
     protected:
