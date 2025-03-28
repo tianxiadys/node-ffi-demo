@@ -3,6 +3,8 @@
 
 #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
 #include "ffi.h"
+#include "node_binding.h"
+#include "v8.h"
 
 namespace node::ffi
 {
@@ -51,6 +53,7 @@ class FFIFunction : public FFIDefinition
 {
 public:
     explicit FFIFunction(const char* defStr, void* address);
+    static FFIFunction* From(Local<Value> value);
     void setParam(int i, Local<Value> value);
     Local<Value> doInvoke(Isolate* isolate);
 
@@ -63,6 +66,7 @@ class FFICallback : public FFIDefinition
 {
 public:
     explicit FFICallback(const char* defStr);
+    static FFICallback* From(Local<Value> value);
     ~FFICallback();
 
 protected:

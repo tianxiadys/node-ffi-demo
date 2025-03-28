@@ -20,9 +20,7 @@
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "env-inl.h"
-#include "node_binding.h"
 #include "node_ffi.h"
-#include "v8.h"
 
 namespace node::ffi
 {
@@ -251,6 +249,13 @@ FFIFunction::FFIFunction(const char* defStr, void* address)
     datas = std::make_unique<ffi_raw[]>(cif.nargs);
 }
 
+FFIFunction* FFIFunction::From(Local<Value> value)
+{
+    return static_cast<FFIFunction*>(
+        readAddress(value)
+    );
+}
+
 void FFIFunction::setParam(int i, Local<Value> value)
 {
     readValue(i + 1, value, &datas[i]);
@@ -278,6 +283,13 @@ FFICallback::FFICallback(const char* defStr)
     }
 }
 
+FFICallback* FFICallback::From(Local<Value> value)
+{
+    return static_cast<FFICallback*>(
+        readAddress(value)
+    );
+}
+
 void FFICallback::RawCallback
 (ffi_cif* cif, void* result, ffi_raw* args, void* data)
 {
@@ -293,7 +305,29 @@ FFICallback::~FFICallback()
 
 void CallFunction(const FunctionCallbackInfo<Value>& args)
 {
+    const auto isolate = args.GetIsolate();
+    const auto function = FFIFunction::From(args[0]);
+    const auto length = args.Length();
+    for (int i = 1; i < length; i++)
+    {
+        function->setParam(i, args[i]);
+    }
+    args.GetReturnValue()
+        .Set(function->doInvoke(isolate));
+}
+
+void CreateCallback(const FunctionCallbackInfo<Value>& args)
+{
+}
+
+void CreateFunction(const FunctionCallbackInfo<Value>& args)
+{
+    const auto isolate = args.GetIsolate();
     const auto address = readAddress(args[0]);
+    const auto defStr = readString(args[1], isolate);
+    const auto function = new FFIFunction(defStr.c_str(), address);
+    args.GetReturnValue()
+        .Set(External::New(isolate, function));
 }
 
 void LoadLibrary(const FunctionCallbackInfo<Value>& args)
@@ -309,8 +343,6 @@ void LoadLibrary(const FunctionCallbackInfo<Value>& args)
     else
     {
         delete library;
-        args.GetReturnValue()
-            .SetNull();
     }
 }
 
@@ -325,11 +357,16 @@ void FindSymbol(const FunctionCallbackInfo<Value>& args)
         args.GetReturnValue()
             .Set(External::New(isolate, address));
     }
-    else
-    {
-        args.GetReturnValue()
-            .SetNull();
-    }
+}
+
+void FreeCallback(const FunctionCallbackInfo<Value>& args)
+{
+    delete FFICallback::From(args[0]);
+}
+
+void FreeFunction(const FunctionCallbackInfo<Value>& args)
+{
+    delete FFIFunction::From(args[0]);
 }
 
 void FreeLibrary(const FunctionCallbackInfo<Value>& args)
@@ -343,7 +380,11 @@ void Initialize(Local<Object> target,
                 void* priv)
 {
     SetMethod(context, target, "CallFunction", CallFunction);
+    SetMethod(context, target, "CreateCallback", CreateCallback);
+    SetMethod(context, target, "CreateFunction", CreateFunction);
     SetMethod(context, target, "FindSymbol", FindSymbol);
+    SetMethod(context, target, "FreeCallback", FreeCallback);
+    SetMethod(context, target, "FreeFunction", FreeFunction);
     SetMethod(context, target, "FreeLibrary", FreeLibrary);
     SetMethod(context, target, "LoadLibrary", LoadLibrary);
 }
@@ -351,7 +392,11 @@ void Initialize(Local<Object> target,
 void Register(ExternalReferenceRegistry* registry)
 {
     registry->Register(CallFunction);
+    registry->Register(CreateCallback);
+    registry->Register(CreateFunction);
     registry->Register(FindSymbol);
+    registry->Register(FreeCallback);
+    registry->Register(FreeFunction);
     registry->Register(FreeLibrary);
     registry->Register(LoadLibrary);
 }
