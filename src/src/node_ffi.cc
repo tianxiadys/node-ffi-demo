@@ -26,7 +26,7 @@
 
 namespace node::ffi
 {
-    void* GetAddress(Local<Value> value)
+    void* ReadAddress(Local<Value> value)
     {
         if (value->IsExternal())
         {
@@ -46,11 +46,11 @@ namespace node::ffi
         return static_cast<T*>(value.As<External>()->Value());
     }
 
-    std::unique_ptr<Utf8Value>
-    ReadString(Isolate* isolate, Local<Value> value)
+    std::string ReadString(Isolate* isolate, Local<Value> value)
     {
         CHECK(value->IsString());
-        return std::make_unique<Utf8Value>(isolate, value);
+        const Utf8Value temp(isolate, value);
+        return temp.ToString();
     }
 
     FFILibrary::FFILibrary(const char* libPath)
@@ -159,7 +159,7 @@ namespace node::ffi
         }
         else if (type == &ffi_type_pointer)
         {
-            datas[i].ptr = GetAddress(value);
+            datas[i].ptr = ReadAddress(value);
         }
         else
         {
@@ -202,7 +202,7 @@ namespace node::ffi
 
     void GetAddress(const FunctionCallbackInfo<Value>& args)
     {
-        const auto result = GetAddress(args[0]);
+        const auto result = ReadAddress(args[0]);
         if (result)
         {
             const auto isolate = args.GetIsolate();
@@ -220,7 +220,7 @@ namespace node::ffi
     {
         const auto isolate = args.GetIsolate();
         const auto path = ReadString(isolate, args[1]);
-        const auto library = new FFILibrary(path->out());
+        const auto library = new FFILibrary(path.c_str());
         if (library->Open())
         {
             args.GetReturnValue()
@@ -239,7 +239,7 @@ namespace node::ffi
         const auto isolate = args.GetIsolate();
         const auto library = ReadExternal<FFILibrary>(args[0]);
         const auto symbol = ReadString(isolate, args[1]);
-        const auto address = library->GetSymbolAddress(symbol->out());
+        const auto address = library->GetSymbolAddress(symbol.c_str());
         if (address)
         {
             args.GetReturnValue()
