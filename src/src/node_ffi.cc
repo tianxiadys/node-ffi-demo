@@ -120,7 +120,8 @@ FFIDefinition::FFIDefinition(const char* defStr)
     }
 }
 
-void FFIDefinition::readValue(int i, ffi_raw* raw, Local<Value> value) const
+void FFIDefinition::readValue
+(int i, ffi_raw* raw, Local<Value> value) const
 {
     switch (cif.arg_types[i])
     {
