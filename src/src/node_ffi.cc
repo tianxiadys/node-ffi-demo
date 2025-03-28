@@ -113,7 +113,7 @@ double readDouble(Local<Value> value)
     return 0.0;
 }
 
-std::string readString(Local<Value> value, Isolate* isolate)
+std::string readString(Isolate* isolate, Local<Value> value)
 {
     if (value->IsString())
     {
@@ -302,14 +302,36 @@ FFICallback* FFICallback::From(Local<Value> value)
     );
 }
 
+void FFICallback::setCallback(Isolate* isolate, Local<Value> value)
+{
+    if (value->IsFunction())
+    {
+        callback.Reset(isolate, value);
+    }
+}
+
 void FFICallback::RawCallback
 (ffi_cif* cif, void* result, ffi_raw* args, void* data)
 {
+    const auto self = static_cast<FFICallback*>(data);
+    const auto isolate = Isolate::GetCurrent();
+    const auto input = std::make_unique<Local<Value>[]>(cif->nargs);
+    for (int i = 0; i < cif->nargs; i++)
+    {
+        input[i] = self->wrapValue(i + 1, isolate, args + i);
+    }
+    const auto function = self->callback.Get(isolate);
+    const auto context = function->GetCreationContextChecked(isolate);
+    const auto output1 = Undefined(isolate);
+    const auto output2 = static_cast<ffi_raw*>(result);
+    function->Call(isolate, context, output1, cif->nargs, input.get());
+    self->readValue(0, output1, output2);
 }
 
 FFICallback::~FFICallback()
 {
     ffi_closure_free(pfc);
+    callback.Reset();
 }
 
 void CallFunction(const FunctionCallbackInfo<Value>& args)
@@ -327,13 +349,23 @@ void CallFunction(const FunctionCallbackInfo<Value>& args)
 
 void CreateCallback(const FunctionCallbackInfo<Value>& args)
 {
+    const auto isolate = args.GetIsolate();
+    const auto defStr = readString(isolate, args[0]);
+    const auto callback = new FFICallback(defStr.c_str());
+    const auto result[] = {
+        External::New(isolate, callback),
+        External::New(isolate, callback->address)
+    };
+    callback->setCallback(isolate, args[1]);
+    args.GetReturnValue()
+        .Set(Array::New(isolate, result, 2));
 }
 
 void CreateFunction(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
     const auto address = readAddress(args[0]);
-    const auto defStr = readString(args[1], isolate);
+    const auto defStr = readString(isolate, args[1]);
     const auto function = new FFIFunction(defStr.c_str(), address);
     args.GetReturnValue()
         .Set(External::New(isolate, function));
@@ -342,7 +374,7 @@ void CreateFunction(const FunctionCallbackInfo<Value>& args)
 void LoadLibrary(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto path = readString(args[0], isolate);
+    const auto path = readString(isolate, args[0]);
     const auto library = new FFILibrary(path.c_str());
     if (library->Open())
     {
@@ -359,7 +391,7 @@ void FindSymbol(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
     const auto library = FFILibrary::From(args[0]);
-    const auto symbol = readString(args[1], isolate);
+    const auto symbol = readString(isolate, args[1]);
     const auto address = library->GetSymbolAddress(symbol.c_str());
     if (address)
     {
@@ -383,19 +415,16 @@ void FreeLibrary(const FunctionCallbackInfo<Value>& args)
     delete FFILibrary::From(args[0]);
 }
 
-void Initialize(Local<Object> target,
-                Local<Value> unused,
-                Local<Context> context,
-                void* priv)
+void Initialize(Local<Object> obj, Local<Value>, Local<Context> ctx, void*)
 {
-    SetMethod(context, target, "CallFunction", CallFunction);
-    SetMethod(context, target, "CreateCallback", CreateCallback);
-    SetMethod(context, target, "CreateFunction", CreateFunction);
-    SetMethod(context, target, "FindSymbol", FindSymbol);
-    SetMethod(context, target, "FreeCallback", FreeCallback);
-    SetMethod(context, target, "FreeFunction", FreeFunction);
-    SetMethod(context, target, "FreeLibrary", FreeLibrary);
-    SetMethod(context, target, "LoadLibrary", LoadLibrary);
+    SetMethod(ctx, obj, "CallFunction", CallFunction);
+    SetMethod(ctx, obj, "CreateCallback", CreateCallback);
+    SetMethod(ctx, obj, "CreateFunction", CreateFunction);
+    SetMethod(ctx, obj, "FindSymbol", FindSymbol);
+    SetMethod(ctx, obj, "FreeCallback", FreeCallback);
+    SetMethod(ctx, obj, "FreeFunction", FreeFunction);
+    SetMethod(ctx, obj, "FreeLibrary", FreeLibrary);
+    SetMethod(ctx, obj, "LoadLibrary", LoadLibrary);
 }
 
 void Register(ExternalReferenceRegistry* registry)
