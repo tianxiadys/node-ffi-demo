@@ -21,46 +21,13 @@
 
 'use strict'
 
-const {
-  TypeError
-} = primordials
-
-const {
-  FindSymbol,
-  FreeLibrary,
-  LoadLibrary
-} = internalBinding('ffi')
-
-function loadLibrary(filename) {
-  if (typeof filename !== 'string') {
-    throw new TypeError('filename must be string')
-  }
-  const result = LoadLibrary(filename)
-  if (!result) {
-    throw new TypeError('dlopen failed')
-  }
-  return result
-}
+module.exports = internalBinding('ffi')
 
 // function loadFunction(library, name, def) {
 //   const parsed = parseDefinition(def)
 //   const address = ffiFindFunction(library, def.name || name)
 //   return (...args) => ffiDownCall(address, parsed, args)
 // }
-
-function dlopen(filename, defMap) {
-  const symbols = {}
-  const library = loadLibrary(filename)
-  // for (const name in defMap) {
-  //   symbols[name] = loadFunction(library, name, defMap[name])
-  // }
-  return { library }
-}
-
-module.exports = {
-  dlopen
-}
-
 
 //
 // const {

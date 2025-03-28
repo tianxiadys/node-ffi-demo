@@ -26,7 +26,7 @@
 
 namespace node::ffi
 {
-    void* GetAddress(const Local<Value>& value)
+    void* GetAddress(Local<Value> value)
     {
         if (value->IsExternal())
         {
@@ -40,17 +40,17 @@ namespace node::ffi
     }
 
     template <class T>
-    T* ReadExternal(const Local<Value>& value)
+    T* ReadExternal(Local<Value> value)
     {
         CHECK(value->IsExternal());
         return static_cast<T*>(value.As<External>()->Value());
     }
 
-    unique_ptr<Utf8Value> ReadString(Isolate* isolate,
-                                     const Local<Value>& value)
+    std::unique_ptr<Utf8Value>
+    ReadString(Isolate* isolate, Local<Value> value)
     {
         CHECK(value->IsString());
-        return make_unique<Utf8Value>(isolate, value);
+        return std::make_unique<Utf8Value>(isolate, value);
     }
 
     FFILibrary::FFILibrary(const char* libPath)
@@ -70,7 +70,7 @@ namespace node::ffi
         {
             UNREACHABLE("Bad defStr size");
         }
-        types = make_unique<ffi_type*[]>(size);
+        types = std::make_unique<ffi_type*[]>(size);
         for (int i = 0; i < size; i++)
         {
             //These field definitions refer to dyncall
@@ -123,10 +123,10 @@ namespace node::ffi
         : FFIDefinition(defStr)
     {
         invoker = FFI_FN(address);
-        datas = make_unique<ffi_raw[]>(cif.nargs);
+        datas = std::make_unique<ffi_raw[]>(cif.nargs);
     }
 
-    void FFIFunction::setParam(const int i, const Local<Value>& value)
+    void FFIFunction::setParam(const int i, Local<Value> value)
     {
         const auto type = cif.arg_types[i];
         if (type == &ffi_type_void)
@@ -200,6 +200,22 @@ namespace node::ffi
         }
     }
 
+    void GetAddress(const FunctionCallbackInfo<Value>& args)
+    {
+        const auto result = GetAddress(args[0]);
+        if (result)
+        {
+            const auto isolate = args.GetIsolate();
+            args.GetReturnValue()
+                .Set(External::New(isolate, result));
+        }
+        else
+        {
+            args.GetReturnValue()
+                .SetNull();
+        }
+    }
+
     void LoadLibrary(const FunctionCallbackInfo<Value>& args)
     {
         const auto isolate = args.GetIsolate();
@@ -246,6 +262,7 @@ namespace node::ffi
                     Local<Context> context,
                     void* priv)
     {
+        SetMethod(context, target, "GetAddress", GetAddress);
         SetMethod(context, target, "FindSymbol", FindSymbol);
         SetMethod(context, target, "FreeLibrary", FreeLibrary);
         SetMethod(context, target, "LoadLibrary", LoadLibrary);
@@ -253,6 +270,7 @@ namespace node::ffi
 
     void Register(ExternalReferenceRegistry* registry)
     {
+        registry->Register(GetAddress);
         registry->Register(FindSymbol);
         registry->Register(FreeLibrary);
         registry->Register(LoadLibrary);

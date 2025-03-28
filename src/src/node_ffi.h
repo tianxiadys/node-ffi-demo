@@ -7,8 +7,6 @@
 namespace node::ffi
 {
     using binding::DLib;
-    using std::make_unique;
-    using std::unique_ptr;
     using v8::ArrayBuffer;
     using v8::BigInt;
     using v8::Context;
@@ -35,19 +33,19 @@ namespace node::ffi
     protected:
         static constexpr auto ABI = FFI_DEFAULT_ABI;
         ffi_cif cif{};
-        unique_ptr<ffi_type*[]> types;
+        std::unique_ptr<ffi_type*[]> types;
     };
 
     class FFIFunction : public FFIDefinition
     {
     public:
         explicit FFIFunction(const char* defStr, void* address);
-        void setParam(int i, const Local<Value>& value);
+        void setParam(int i, Local<Value> value);
         void doInvoke(ffi_raw* result);
 
     protected:
         void (*invoker)(){};
-        unique_ptr<ffi_raw[]> datas;
+        std::unique_ptr<ffi_raw[]> datas;
     };
 
     class FFICallback : public FFIDefinition
