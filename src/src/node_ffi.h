@@ -12,10 +12,12 @@ namespace node::ffi
     using v8::Context;
     using v8::External;
     using v8::FunctionCallbackInfo;
+    using v8::Int32;
     using v8::Isolate;
     using v8::Local;
     using v8::Number;
     using v8::Object;
+    using v8::Uint32;
     using v8::Value;
 
     class FFILibrary : public DLib
@@ -29,6 +31,8 @@ namespace node::ffi
     {
     public:
         explicit FFIDefinition(const char* defStr);
+        void readValue(int i, ffi_raw* raw, Local<Value> value) const;
+        Local<Value> wrapValue(int i, ffi_raw* raw, Isolate* isolate) const;
 
     protected:
         static constexpr auto ABI = FFI_DEFAULT_ABI;
