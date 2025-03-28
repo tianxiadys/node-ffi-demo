@@ -26,7 +26,7 @@
 
 namespace node::ffi
 {
-void* ReadAddress(Local<Value> value)
+void* readAddress(Local<Value> value)
 {
     if (value->IsExternal())
     {
@@ -36,27 +36,94 @@ void* ReadAddress(Local<Value> value)
     {
         return value.As<ArrayBuffer>()->Data();
     }
+    if (value->IsBigInt())
+    {
+        return reinterpret_cast<void*>(
+            value.As<BigInt>()->Uint64Value()
+        );
+    }
+    //todo: possible support String & TypedArray & DataView
     return nullptr;
 }
 
-template <class T>
-T* ReadExternal(Local<Value> value)
+int64_t readInt64(Local<Value> value)
 {
-    CHECK(value->IsExternal());
-    const auto temp = value.As<External>()->Value();
-    return static_cast<T*>(temp);
+    if (value->IsInt32())
+    {
+        return value.As<Int32>()->Value();
+    }
+    if (value->IsUint32())
+    {
+        return value.As<Uint32>()->Value();
+    }
+    if (value->IsNumber())
+    {
+        return static_cast<int64_t>(
+            value.As<Number>()->Value()
+        );
+    }
+    if (value->IsBigInt())
+    {
+        return value.As<BigInt>()->Int64Value();
+    }
+    return 0;
 }
 
-std::string ReadString(Isolate* isolate, Local<Value> value)
+uint64_t readUInt64(Local<Value> value)
 {
-    CHECK(value->IsString());
-    const Utf8Value temp(isolate, value);
-    return temp.ToString();
+    if (value->IsUint32())
+    {
+        return value.As<Uint32>()->Value();
+    }
+    if (value->IsInt32())
+    {
+        return value.As<Int32>()->Value();
+    }
+    if (value->IsNumber())
+    {
+        return static_cast<uint64_t>(
+            value.As<Number>()->Value()
+        );
+    }
+    if (value->IsBigInt())
+    {
+        return value.As<BigInt>()->Uint64Value();
+    }
+    return 0;
+}
+
+double readDouble(Local<Value> value)
+{
+    if (value->IsNumber())
+    {
+        return value.As<Number>()->Value();
+    }
+    if (value->IsBigInt())
+    {
+        return value.As<BigInt>()->Int64Value();
+    }
+    return 0.0;
+}
+
+std::string readString(Local<Value> value, Isolate* isolate)
+{
+    if (value->IsString())
+    {
+        return Utf8Value(isolate, value).ToString();
+    }
+    return "";
 }
 
 FFILibrary::FFILibrary(const char* libPath)
     : DLib(libPath, kDefaultFlags)
 {
+}
+
+FFILibrary* FFILibrary::From(Local<Value> value)
+{
+    return static_cast<FFILibrary*>(
+        readAddress(value)
+    );
 }
 
 FFILibrary::~FFILibrary()
@@ -120,43 +187,37 @@ FFIDefinition::FFIDefinition(const char* defStr)
     }
 }
 
-void FFIDefinition::readValue
-(int i, ffi_raw* raw, Local<Value> value) const
+void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
 {
     switch (cif.arg_types[i])
     {
     case &ffi_type_void:
-        raw->uint = 0;
+        output->uint = 0;
         break;
     case &ffi_type_uint8:
     case &ffi_type_uint16:
     case &ffi_type_uint32:
-        raw->uint = value.As<Number>()->Value();
+    case &ffi_type_uint64:
+        output->uint = readUInt64(input);
         break;
     case &ffi_type_sint8:
     case &ffi_type_sint16:
     case &ffi_type_sint32:
-        raw->sint = value.As<Number>()->Value();
+    case &ffi_type_sint64:
+        output->sint = readInt64(input);
         break;
     case &ffi_type_float:
-        raw->flt = value.As<Number>()->Value();
-        break;
-    case &ffi_type_uint64:
-        raw->uint = value.As<BigInt>()->Uint64Value();
-        break;
-    case &ffi_type_sint64:
-        raw->sint = value.As<BigInt>()->Int64Value();
+        output->flt = readDouble(input);
         break;
     case &ffi_type_pointer:
-        raw->ptr = ReadAddress(value);
+        output->ptr = readAddress(input);
         break;
     default:
         UNREACHABLE("Bad FFI type");
     }
 }
 
-Local<Value> FFIDefinition::wrapValue
-(int i, ffi_raw* raw, Isolate* isolate) const
+Local<Value> FFIDefinition::wrapValue(int i, Isolate* isolate, ffi_raw* input)
 {
     switch (cif.arg_types[i])
     {
@@ -165,19 +226,19 @@ Local<Value> FFIDefinition::wrapValue
     case &ffi_type_uint8:
     case &ffi_type_uint16:
     case &ffi_type_uint32:
-        return Uint32::New(isolate, raw->uint);
+        return Uint32::New(isolate, input->uint);
+    case &ffi_type_uint64:
+        return BigInt::NewFromUnsigned(isolate, input->uint);
     case &ffi_type_sint8:
     case &ffi_type_sint16:
     case &ffi_type_sint32:
-        return Int32::New(isolate, raw->sint);
-    case &ffi_type_float:
-        return Number::New(isolate, raw->flt);
-    case &ffi_type_uint64:
-        return BigInt::NewFromUnsigned(isolate, raw->uint);
+        return Int32::New(isolate, input->sint);
     case &ffi_type_sint64:
-        return BigInt::New(isolate, raw->sint);
+        return BigInt::New(isolate, input->sint);
+    case &ffi_type_float:
+        return Number::New(isolate, input->flt);
     case &ffi_type_pointer:
-        return External::New(isolate, raw->ptr);
+        return External::New(isolate, input->ptr);
     default:
         UNREACHABLE("Bad FFI type");
     }
@@ -190,49 +251,16 @@ FFIFunction::FFIFunction(const char* defStr, void* address)
     datas = std::make_unique<ffi_raw[]>(cif.nargs);
 }
 
-void FFIFunction::setParam(const int i, Local<Value> value)
+void FFIFunction::setParam(int i, Local<Value> value)
 {
-    const auto type = cif.arg_types[i];
-    if (type == &ffi_type_void)
-    {
-        datas[i].uint = 0;
-    }
-    else if (type == &ffi_type_uint8
-        || type == &ffi_type_uint16
-        || type == &ffi_type_uint32)
-    {
-    }
-    else if (type == &ffi_type_sint8
-        || type == &ffi_type_sint16
-        || type == &ffi_type_sint32)
-    {
-        datas[i].sint = value.As<Number>()->Value();
-    }
-    else if (type == &ffi_type_float)
-    {
-        datas[i].flt = value.As<Number>()->Value();
-    }
-    else if (type == &ffi_type_uint64)
-    {
-        datas[i].uint = value.As<BigInt>()->Uint64Value();
-    }
-    else if (type == &ffi_type_sint64)
-    {
-        datas[i].sint = value.As<BigInt>()->Int64Value();
-    }
-    else if (type == &ffi_type_pointer)
-    {
-        datas[i].ptr = ReadAddress(value);
-    }
-    else
-    {
-        UNREACHABLE("Bad FFI type");
-    }
+    readValue(i + 1, value, &datas[i]);
 }
 
-void FFIFunction::doInvoke(ffi_raw* result)
+Local<Value> FFIFunction::doInvoke(Isolate* isolate)
 {
-    ffi_raw_call(&cif, invoker, result, datas.get());
+    ffi_raw result;
+    ffi_raw_call(&cif, invoker, &result, datas.get());
+    return wrapValue(0, isolate, &result);
 }
 
 FFICallback::FFICallback(const char* defStr)
@@ -243,16 +271,16 @@ FFICallback::FFICallback(const char* defStr)
     {
         UNREACHABLE("ffi_closure_alloc Failed");
     }
-    pfc = static_cast<ffi_closure*>(alloc);
-    if (ffi_prep_closure(pfc, &cif, RawCallback, this) != FFI_OK)
+    pfc = static_cast<ffi_raw_closure*>(alloc);
+    if (ffi_prep_raw_closure(pfc, &cif, RawCallback, this) != FFI_OK)
     {
-        UNREACHABLE("ffi_prep_closure Failed");
+        UNREACHABLE("ffi_prep_raw_closure Failed");
     }
 }
 
-void FFICallback::RawCallback(ffi_cif*, void* ret, void** args, void* data)
+void FFICallback::RawCallback
+(ffi_cif* cif, void* result, ffi_raw* args, void* data)
 {
-    const auto self = static_cast<FFICallback*>(data);
 }
 
 FFICallback::~FFICallback()
@@ -265,28 +293,13 @@ FFICallback::~FFICallback()
 
 void CallFunction(const FunctionCallbackInfo<Value>& args)
 {
-}
-
-void GetAddress(const FunctionCallbackInfo<Value>& args)
-{
-    const auto result = ReadAddress(args[0]);
-    if (result)
-    {
-        const auto isolate = args.GetIsolate();
-        args.GetReturnValue()
-            .Set(External::New(isolate, result));
-    }
-    else
-    {
-        args.GetReturnValue()
-            .SetNull();
-    }
+    const auto address = readAddress(args[0]);
 }
 
 void LoadLibrary(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto path = ReadString(isolate, args[1]);
+    const auto path = readString(args[0], isolate);
     const auto library = new FFILibrary(path.c_str());
     if (library->Open())
     {
@@ -304,8 +317,8 @@ void LoadLibrary(const FunctionCallbackInfo<Value>& args)
 void FindSymbol(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto library = ReadExternal<FFILibrary>(args[0]);
-    const auto symbol = ReadString(isolate, args[1]);
+    const auto library = FFILibrary::From(args[0]);
+    const auto symbol = readString(args[1], isolate);
     const auto address = library->GetSymbolAddress(symbol.c_str());
     if (address)
     {
@@ -321,7 +334,7 @@ void FindSymbol(const FunctionCallbackInfo<Value>& args)
 
 void FreeLibrary(const FunctionCallbackInfo<Value>& args)
 {
-    delete ReadExternal<FFILibrary>(args[0]);
+    delete FFILibrary::From(args[0]);
 }
 
 void Initialize(Local<Object> target,
@@ -329,7 +342,7 @@ void Initialize(Local<Object> target,
                 Local<Context> context,
                 void* priv)
 {
-    SetMethod(context, target, "GetAddress", GetAddress);
+    SetMethod(context, target, "CallFunction", CallFunction);
     SetMethod(context, target, "FindSymbol", FindSymbol);
     SetMethod(context, target, "FreeLibrary", FreeLibrary);
     SetMethod(context, target, "LoadLibrary", LoadLibrary);
@@ -337,7 +350,7 @@ void Initialize(Local<Object> target,
 
 void Register(ExternalReferenceRegistry* registry)
 {
-    registry->Register(GetAddress);
+    registry->Register(CallFunction);
     registry->Register(FindSymbol);
     registry->Register(FreeLibrary);
     registry->Register(LoadLibrary);

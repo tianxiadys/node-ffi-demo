@@ -20,10 +20,17 @@ using v8::Object;
 using v8::Uint32;
 using v8::Value;
 
+void* readAddress(Local<Value> value);
+int64_t readInt64(Local<Value> value);
+uint64_t readUInt64(Local<Value> value);
+double readDouble(Local<Value> value);
+std::string readString(Local<Value> value, Isolate* isolate);
+
 class FFILibrary : public DLib
 {
 public:
     explicit FFILibrary(const char* libPath);
+    static FFILibrary* From(Local<Value> value);
     ~FFILibrary();
 };
 
@@ -31,8 +38,8 @@ class FFIDefinition
 {
 public:
     explicit FFIDefinition(const char* defStr);
-    void readValue(int i, ffi_raw* raw, Local<Value> value) const;
-    Local<Value> wrapValue(int i, ffi_raw* raw, Isolate* isolate) const;
+    void readValue(int i, Local<Value> input, ffi_raw* output);
+    Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input);
 
 protected:
     static constexpr auto ABI = FFI_DEFAULT_ABI;
@@ -59,9 +66,9 @@ public:
     ~FFICallback();
 
 protected:
-    static constexpr auto FCS = sizeof(ffi_closure);
-    static void RawCallback(ffi_cif*, void*, void**, void*);
-    ffi_closure* pfc{};
+    static constexpr auto FCS = sizeof(ffi_raw_closure);
+    static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
+    ffi_raw_closure* pfc{};
     void* address{};
 };
 } // namespace node::ffi
