@@ -64,19 +64,49 @@ Here is the system and CPU support status:
 4. Unfortunately, I do not have access to a Mac device,
    so I was unable to test this in a real environment.
    However, it should probably work.
-   By the way, I’ve already ordered a Mac Mini.
-   Thanks to Apple, it’s truly an amazing device.
-   Even so, I have never used macOS before,
-   so it might take some time to complete this test.
 5. Support for other architectures and systems will be addressed in future PRs.
 
 ---
-In Deno's implementation,
-There are two APIs that confuse me and are complex to implement,
-so I didn’t implement them.
-The first is `UnsafeCallback.threadSafe`,
-and the second is the `nonblocking` option in the function signature.
-These are seem more suitable for third-party libraries rather than being included in the core code.
-What does everyone think?
-if necessary, they can be added in future PRs.
+If @x sees this, I would like to discuss this issue with you.
+It seems that a `double` type field is missing in `ffi_raw`.
+Was this intentionally designed?
+Although this issue can be resolved by forcibly casting the pointer type,
+I didn't do so because I suspect there might be some traps I'm unaware of waiting for me.
 
+---
+If @x sees this, I would like to discuss these feature with you.
+These two features are `UnsafeCallback.threadSafe` and the `nonblocking` option.
+They seem to work as a pair;
+at the very least, the `threadSafe` method should not be able to exist independently of `nonblocking`.
+The most complex callback scenarios I can think of
+are the Win32 window procedure callback and APC invocation.
+The former involves registering a callback method in `RegisterWndClass`,
+and later, during the message loop,
+the thread processes the window procedure by calling `DispatchMessage`.
+The latter involves registering a callback method in `ReadFileEx`,
+and subsequently, the APC callback is entered internally within the `SleepEx` method.
+In any case, the prerequisite for the current thread to enter a callback function
+is that the thread must call a certain method,
+and this method will internally locate the callback function pointer recorded somewhere,
+and then enter the callback function.
+A thread cannot arbitrarily enter a callback function at any location;
+perhaps only Linux's `signal` method has such magical capabilities.
+In summary, `threadSafe` seems to apply only to certain specific scenarios.
+For example, an independent thread outside of the Node.js event loop executes some kind of loop,
+and at a certain point in the loop,
+it sends a message to the Node.js main thread.
+Wouldn't such a requirement be more suitable for implementation
+in a third-party library rather than in the core code of Node.js or Deno.js?
+
+---
+I can't wait to share this module with everyone!
+The following tasks have not been completed yet,
+but perhaps they can be ignored in this PR and completed in future PRs:
+
+1. Documentation for the ffi module (nightly users can refer to Deno.js's documentation).
+2. Support only for Windows, Linux, Mac platforms, and certain CPU architectures.
+3. Auto-update scripts for libffi.
+4. Unit test code and benchmark test code
+5. `UnsafeCallback.threadSafe` and the `nonblocking` option.
+6. The `double` type is not supported.
+7. Other details I haven't thought of yet.

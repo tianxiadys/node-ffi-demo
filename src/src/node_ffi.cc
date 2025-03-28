@@ -98,7 +98,9 @@ double readDouble(Local<Value> value)
     }
     if (value->IsBigInt())
     {
-        return value.As<BigInt>()->Int64Value();
+        return static_cast<double>(
+            value.As<BigInt>()->Int64Value()
+        );
     }
     return 0.0;
 }
@@ -187,27 +189,27 @@ FFIDefinition::FFIDefinition(const char* defStr)
 
 void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
 {
-    switch (cif.arg_types[i])
+    switch (cif.arg_types[i]->type)
     {
-    case &ffi_type_void:
+    case FFI_TYPE_VOID:
         output->uint = 0;
         break;
-    case &ffi_type_uint8:
-    case &ffi_type_uint16:
-    case &ffi_type_uint32:
-    case &ffi_type_uint64:
+    case FFI_TYPE_UINT8:
+    case FFI_TYPE_UINT16:
+    case FFI_TYPE_UINT32:
+    case FFI_TYPE_UINT64:
         output->uint = readUInt64(input);
         break;
-    case &ffi_type_sint8:
-    case &ffi_type_sint16:
-    case &ffi_type_sint32:
-    case &ffi_type_sint64:
+    case FFI_TYPE_SINT8:
+    case FFI_TYPE_SINT16:
+    case FFI_TYPE_SINT32:
+    case FFI_TYPE_SINT64:
         output->sint = readInt64(input);
         break;
-    case &ffi_type_float:
+    case FFI_TYPE_FLOAT:
         output->flt = readDouble(input);
         break;
-    case &ffi_type_pointer:
+    case FFI_TYPE_POINTER:
         output->ptr = readAddress(input);
         break;
     default:
@@ -217,25 +219,25 @@ void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
 
 Local<Value> FFIDefinition::wrapValue(int i, Isolate* isolate, ffi_raw* input)
 {
-    switch (cif.arg_types[i])
+    switch (cif.arg_types[i]->type)
     {
-    case &ffi_type_void:
+    case FFI_TYPE_VOID:
         return Undefined(isolate);
-    case &ffi_type_uint8:
-    case &ffi_type_uint16:
-    case &ffi_type_uint32:
+    case FFI_TYPE_UINT8:
+    case FFI_TYPE_UINT16:
+    case FFI_TYPE_UINT32:
         return Uint32::New(isolate, input->uint);
-    case &ffi_type_uint64:
+    case FFI_TYPE_UINT64:
         return BigInt::NewFromUnsigned(isolate, input->uint);
-    case &ffi_type_sint8:
-    case &ffi_type_sint16:
-    case &ffi_type_sint32:
+    case FFI_TYPE_SINT8:
+    case FFI_TYPE_SINT16:
+    case FFI_TYPE_SINT32:
         return Int32::New(isolate, input->sint);
-    case &ffi_type_sint64:
+    case FFI_TYPE_SINT64:
         return BigInt::New(isolate, input->sint);
-    case &ffi_type_float:
+    case FFI_TYPE_FLOAT:
         return Number::New(isolate, input->flt);
-    case &ffi_type_pointer:
+    case FFI_TYPE_POINTER:
         return External::New(isolate, input->ptr);
     default:
         UNREACHABLE("Bad FFI type");
