@@ -34,13 +34,14 @@ void* readAddress(Local<Value> value)
     {
         return value.As<ArrayBuffer>()->Data();
     }
-    if (value->IsBigInt())
+    if (value->IsArrayBufferView())
     {
-        return reinterpret_cast<void*>(
-            value.As<BigInt>()->Uint64Value()
-        );
+        const auto view = value.As<ArrayBufferView>();
+        const auto buffer = view->Buffer();
+        const auto offset = view->ByteOffset();
+        const auto start = buffer->Data();
+        return static_cast<char*>(start) + offset;
     }
-    //todo: possible support String & TypedArray & DataView
     return nullptr;
 }
 
@@ -88,6 +89,13 @@ uint64_t readUInt64(Local<Value> value)
         return value.As<BigInt>()->Uint64Value();
     }
     return 0;
+}
+
+float readFloat(Local<Value> value)
+{
+    return static_cast<float>(
+        readDouble(value)
+    );
 }
 
 double readDouble(Local<Value> value)
@@ -187,7 +195,8 @@ FFIDefinition::FFIDefinition(const char* defStr)
     }
 }
 
-void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
+void FFIDefinition::readValue
+(int i, Local<Value> input, ffi_raw* output) const
 {
     switch (types[i]->type)
     {
@@ -207,7 +216,7 @@ void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
         output->sint = readInt64(input);
         break;
     case FFI_TYPE_FLOAT:
-        output->flt = readDouble(input);
+        output->flt = readFloat(input);
         break;
     case FFI_TYPE_POINTER:
         output->ptr = readAddress(input);
@@ -217,7 +226,8 @@ void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
     }
 }
 
-Local<Value> FFIDefinition::wrapValue(int i, Isolate* isolate, ffi_raw* input)
+Local<Value> FFIDefinition::wrapValue
+(int i, Isolate* isolate, ffi_raw* input) const
 {
     switch (types[i]->type)
     {

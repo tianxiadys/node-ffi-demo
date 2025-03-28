@@ -10,6 +10,7 @@ namespace node::ffi
 {
 using binding::DLib;
 using v8::ArrayBuffer;
+using v8::ArrayBufferView;
 using v8::BigInt;
 using v8::Context;
 using v8::External;
@@ -25,6 +26,7 @@ using v8::Value;
 void* readAddress(Local<Value> value);
 int64_t readInt64(Local<Value> value);
 uint64_t readUInt64(Local<Value> value);
+float readFloat(Local<Value> value);
 double readDouble(Local<Value> value);
 std::string readString(Local<Value> value, Isolate* isolate);
 
@@ -40,8 +42,8 @@ class FFIDefinition
 {
 public:
     explicit FFIDefinition(const char* defStr);
-    void readValue(int i, Local<Value> input, ffi_raw* output);
-    Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input);
+    void readValue(int i, Local<Value> input, ffi_raw* output) const;
+    Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input) const;
 
 protected:
     static constexpr auto ABI = FFI_DEFAULT_ABI;
