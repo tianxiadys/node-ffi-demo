@@ -189,7 +189,7 @@ FFIDefinition::FFIDefinition(const char* defStr)
 
 void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
 {
-    switch (cif.arg_types[i]->type)
+    switch (types[i]->type)
     {
     case FFI_TYPE_VOID:
         output->uint = 0;
@@ -219,7 +219,7 @@ void FFIDefinition::readValue(int i, Local<Value> input, ffi_raw* output)
 
 Local<Value> FFIDefinition::wrapValue(int i, Isolate* isolate, ffi_raw* input)
 {
-    switch (cif.arg_types[i]->type)
+    switch (types[i]->type)
     {
     case FFI_TYPE_VOID:
         return Undefined(isolate);
@@ -260,7 +260,7 @@ FFIFunction* FFIFunction::From(Local<Value> value)
 
 void FFIFunction::setParam(int i, Local<Value> value)
 {
-    readValue(i + 1, value, &datas[i]);
+    readValue(i, value, &datas[i - 1]);
 }
 
 Local<Value> FFIFunction::doInvoke(Isolate* isolate)
@@ -299,10 +299,7 @@ void FFICallback::RawCallback
 
 FFICallback::~FFICallback()
 {
-    if (pfc)
-    {
-        ffi_closure_free(pfc);
-    }
+    ffi_closure_free(pfc);
 }
 
 void CallFunction(const FunctionCallbackInfo<Value>& args)
