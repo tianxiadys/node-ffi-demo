@@ -64,7 +64,7 @@ protected:
     ffi_closure* pfc{};
     void* address{};
 };
-}
+} // namespace node::ffi
 
 #endif // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
 #endif // SRC_NODE_FFI_H_

@@ -342,7 +342,7 @@ void Register(ExternalReferenceRegistry* registry)
     registry->Register(FreeLibrary);
     registry->Register(LoadLibrary);
 }
-}
+} // namespace node::ffi
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::Register)
