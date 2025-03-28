@@ -306,7 +306,8 @@ void FFICallback::setCallback(Isolate* isolate, Local<Value> value)
 {
     if (value->IsFunction())
     {
-        callback.Reset(isolate, value);
+        const auto function = value.As<Function>();
+        callback.Reset(isolate, function);
     }
 }
 
@@ -315,17 +316,24 @@ void FFICallback::RawCallback
 {
     const auto self = static_cast<FFICallback*>(data);
     const auto isolate = Isolate::GetCurrent();
-    const auto input = std::make_unique<Local<Value>[]>(cif->nargs);
-    for (int i = 0; i < cif->nargs; i++)
+    const auto params = std::make_unique<Local<Value>[]>(cif->nargs);
+    for (unsigned i = 0; i < cif->nargs; i++)
     {
-        input[i] = self->wrapValue(i + 1, isolate, args + i);
+        params[i] = self->wrapValue(i + 1, isolate, args + i);
     }
     const auto function = self->callback.Get(isolate);
     const auto context = function->GetCreationContextChecked(isolate);
-    const auto output1 = Undefined(isolate);
-    const auto output2 = static_cast<ffi_raw*>(result);
-    function->Call(isolate, context, output1, cif->nargs, input.get());
-    self->readValue(0, output1, output2);
+    const auto result1 = Undefined(isolate);
+    const auto result2 = static_cast<ffi_raw*>(result);
+    printf("before:result1:%lld\n", readInt64(result1));
+    printf("before:result2:%lld\n", result2->uint);
+    const auto result3 = function->Call(isolate, context, result1, cif->nargs, params.get());
+    printf("after:result1:%lld\n", readInt64(result1));
+    Local<Value> result4;
+    result3.ToLocal(&result4);
+    printf("after:result4:%lld\n", readInt64(result4));
+    self->readValue(0, result1, result2);
+    printf("after:result2:%lld\n", result2->uint);
 }
 
 FFICallback::~FFICallback()
@@ -352,11 +360,11 @@ void CreateCallback(const FunctionCallbackInfo<Value>& args)
     const auto isolate = args.GetIsolate();
     const auto defStr = readString(isolate, args[0]);
     const auto callback = new FFICallback(defStr.c_str());
-    const auto result[] = {
+    callback->setCallback(isolate, args[1]);
+    Local<Value> result[] = {
         External::New(isolate, callback),
         External::New(isolate, callback->address)
     };
-    callback->setCallback(isolate, args[1]);
     args.GetReturnValue()
         .Set(Array::New(isolate, result, 2));
 }
