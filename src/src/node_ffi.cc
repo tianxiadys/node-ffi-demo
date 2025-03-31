@@ -121,13 +121,13 @@ FFILibrary::~FFILibrary()
 
 FFIDefinition::FFIDefinition(const char* defStr)
 {
-    const auto size = strlen(defStr);
-    if (size < 1)
+    const auto length = strlen(defStr);
+    if (length < 1)
     {
         UNREACHABLE("Bad defStr size");
     }
-    types = std::make_unique<ffi_type*[]>(size);
-    for (int i = 0; i < size; i++)
+    types = std::make_unique<ffi_type*[]>(length);
+    for (int i = 0; i < length; i++)
     {
         //These field definitions refer to dyncall
         switch (defStr[i])
@@ -169,7 +169,7 @@ FFIDefinition::FFIDefinition(const char* defStr)
             UNREACHABLE("Bad FFI type");
         }
     }
-    if (ffi_prep_cif(&cif, ABI, size - 1, types[0], &types[1]) != FFI_OK)
+    if (ffi_prep_cif(&cif, ABI, length - 1, types[0], &types[1]) != FFI_OK)
     {
         UNREACHABLE("ffi_prep_cif Failed");
     }
@@ -256,13 +256,13 @@ Local<Value> FFIFunction::doInvoke(Isolate* isolate)
 FFICallback::FFICallback(const char* defStr)
     : FFIDefinition(defStr)
 {
-    const auto alloc = ffi_closure_alloc(FCS, &address);
+    const auto alloc = ffi_closure_alloc(RCS, &address);
     if (!alloc)
     {
         UNREACHABLE("ffi_closure_alloc Failed");
     }
-    pfc = (ffi_raw_closure*)alloc;
-    if (ffi_prep_raw_closure(pfc, &cif, RawCallback, this) != FFI_OK)
+    frc = (ffi_raw_closure*)alloc;
+    if (ffi_prep_raw_closure(frc, &cif, RawCallback, this) != FFI_OK)
     {
         UNREACHABLE("ffi_prep_raw_closure Failed");
     }
@@ -302,7 +302,7 @@ void FFICallback::RawCallback
 
 FFICallback::~FFICallback()
 {
-    ffi_closure_free(pfc);
+    ffi_closure_free(frc);
     callback.Reset();
 }
 

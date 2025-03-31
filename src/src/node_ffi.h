@@ -66,14 +66,14 @@ public:
 class FFICallback : public FFIDefinition
 {
 public:
-    static constexpr auto FCS = sizeof(ffi_raw_closure);
+    static constexpr auto RCS = sizeof(ffi_raw_closure);
     static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
 
     explicit FFICallback(const char* defStr);
     void setCallback(Isolate* isolate, Local<Value> value);
     ~FFICallback();
 
-    ffi_raw_closure* pfc{};
+    ffi_raw_closure* frc{};
     void* address{};
     Persistent<Function> callback;
 };
