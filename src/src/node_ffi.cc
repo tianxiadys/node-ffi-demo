@@ -298,8 +298,8 @@ void FFICallback::RawCallback
     const auto function = self->callback.Get(isolate);
     const auto context = function->GetCreationContextChecked(isolate);
     const auto global = Undefined(isolate);
-    const auto return1 = function->Call(
-        isolate, context, global, length, params.get());
+    const auto return1 =
+        function->Call(isolate, context, global, length, params.get());
     Local<Value> return2;
     if (return1.ToLocal(&return2))
     {
