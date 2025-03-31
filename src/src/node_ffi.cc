@@ -19,6 +19,8 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+#if HAVE_FFI
+
 #include "env-inl.h"
 #include "node_ffi.h"
 
@@ -290,11 +292,14 @@ void FFICallback::RawCallback
     }
     const auto function = self->callback.Get(isolate);
     const auto context = function->GetCreationContextChecked(isolate);
-    const auto temp1 = Undefined(isolate);
-    const auto temp2 = function->Call(
-        isolate, context, temp1, length, params.get());
-    const auto temp3 = temp2.FromMaybe(temp1);
-    self->readValue(0, temp3, (ffi_raw*)result);
+    const auto global = Undefined(isolate);
+    const auto return1 = function->Call(
+        isolate, context, global, length, params.get());
+    Local<Value> return2;
+    if (return1.ToLocal(&return2))
+    {
+        self->readValue(0, return2, (ffi_raw*)result);
+    }
 }
 
 FFICallback::~FFICallback()
@@ -411,3 +416,5 @@ void Register(ExternalReferenceRegistry* registry)
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::Register)
+
+#endif // HAVE_FFI

@@ -440,7 +440,6 @@
     }],
     ['node_use_ffi=="true"', {
       'defines': ['HAVE_FFI=1'],
-      'sources': ['src/node_ffi.cc'],
       'dependencies': ['./deps/libffi/libffi.gyp:libffi'],
     }],
   ],
