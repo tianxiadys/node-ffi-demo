@@ -22,6 +22,7 @@
 #if HAVE_FFI
 
 #include "env-inl.h"
+#include "node_buffer.h"
 #include "node_ffi.h"
 
 namespace node::ffi
@@ -43,6 +44,10 @@ void* readAddress(Local<Value> value)
         const auto offset = view->ByteOffset();
         const auto start = buffer->Data();
         return (char*)start + offset;
+    }
+    if (value->IsBigInt())
+    {
+        return (void*)value.As<BigInt>()->Uint64Value();
     }
     return nullptr;
 }
@@ -321,6 +326,16 @@ void CallFunction(const FunctionCallbackInfo<Value>& args)
         .Set(function->doInvoke(isolate));
 }
 
+void CreateBuffer(const FunctionCallbackInfo<Value>& args)
+{
+    const auto isolate = args.GetIsolate();
+    const auto address = readAddress(args[0]);
+    const auto length = readUInt64(args[1]);
+    args.GetReturnValue()
+        .Set(Buffer::New(isolate, (char*)address, length)
+            .ToLocalChecked());
+}
+
 void CreateCallback(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
@@ -343,22 +358,6 @@ void CreateFunction(const FunctionCallbackInfo<Value>& args)
     const auto function = new FFIFunction(defStr.c_str(), address);
     args.GetReturnValue()
         .Set(External::New(isolate, function));
-}
-
-void LoadLibrary(const FunctionCallbackInfo<Value>& args)
-{
-    const auto isolate = args.GetIsolate();
-    const auto path = readString(isolate, args[0]);
-    const auto library = new FFILibrary(path.c_str());
-    if (library->Open())
-    {
-        args.GetReturnValue()
-            .Set(External::New(isolate, library));
-    }
-    else
-    {
-        delete library;
-    }
 }
 
 void FindSymbol(const FunctionCallbackInfo<Value>& args)
@@ -389,27 +388,55 @@ void FreeLibrary(const FunctionCallbackInfo<Value>& args)
     delete (FFILibrary*)readAddress(args[0]);
 }
 
+void GetAddress(const FunctionCallbackInfo<Value>& args)
+{
+    const auto isolate = args.GetIsolate();
+    const auto address = readAddress(args[0]);
+    args.GetReturnValue()
+        .Set(BigInt::NewFromUnsigned(isolate, (uint64_t)address));
+}
+
+void LoadLibrary(const FunctionCallbackInfo<Value>& args)
+{
+    const auto isolate = args.GetIsolate();
+    const auto path = readString(isolate, args[0]);
+    const auto library = new FFILibrary(path.c_str());
+    if (library->Open())
+    {
+        args.GetReturnValue()
+            .Set(External::New(isolate, library));
+    }
+    else
+    {
+        delete library;
+    }
+}
+
 void Initialize(Local<Object> obj, Local<Value>, Local<Context> ctx, void*)
 {
     SetMethod(ctx, obj, "CallFunction", CallFunction);
+    SetMethod(ctx, obj, "CreateBuffer", CreateBuffer);
     SetMethod(ctx, obj, "CreateCallback", CreateCallback);
     SetMethod(ctx, obj, "CreateFunction", CreateFunction);
     SetMethod(ctx, obj, "FindSymbol", FindSymbol);
     SetMethod(ctx, obj, "FreeCallback", FreeCallback);
     SetMethod(ctx, obj, "FreeFunction", FreeFunction);
     SetMethod(ctx, obj, "FreeLibrary", FreeLibrary);
+    SetMethod(ctx, obj, "GetAddress", GetAddress);
     SetMethod(ctx, obj, "LoadLibrary", LoadLibrary);
 }
 
 void Register(ExternalReferenceRegistry* registry)
 {
     registry->Register(CallFunction);
+    registry->Register(CreateBuffer);
     registry->Register(CreateCallback);
     registry->Register(CreateFunction);
     registry->Register(FindSymbol);
     registry->Register(FreeCallback);
     registry->Register(FreeFunction);
     registry->Register(FreeLibrary);
+    registry->Register(GetAddress);
     registry->Register(LoadLibrary);
 }
 } // namespace node::ffi
