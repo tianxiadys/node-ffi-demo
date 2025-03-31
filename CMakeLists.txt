@@ -4,11 +4,12 @@ set(CMAKE_CXX_STANDARD 20)
 ###
 add_library(nodeffi SHARED
         src/src/node_ffi.cc
+        src/src/node_options.cc
         src/src/permission/ffi_permission.cc
 )
 target_compile_definitions(nodeffi PRIVATE
         NODE_WANT_INTERNALS=1
-        NODE_ENABLE_FFI=1
+        HAVE_FFI=1
 )
 target_include_directories(nodeffi PRIVATE
         src/deps/libffi/fixed
