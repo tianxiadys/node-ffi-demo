@@ -11,15 +11,15 @@ const {
 } = require('node:ffi');
 
 const gcCallback = new FinalizationRegistry(val => {
-  console.log(`gcCallback:${val}`);
+  console.log('gcCallback', val);
   FreeCallback(val);
 });
 const gcFunction = new FinalizationRegistry(val => {
-  console.log(`gcFunction:${val}`);
+  console.log('gcFunction', val);
   FreeFunction(val);
 });
 const gcLibrary = new FinalizationRegistry(val => {
-  console.log(`gcLibrary:${val}`);
+  console.log('gcLibrary', val);
   FreeLibrary(val);
 });
 
@@ -68,16 +68,17 @@ function parseDefStr(result, parameters) {
   return temp.join('');
 }
 
-function createSymbol(defObj, name, library) {
+function createSymbol(defObj, name, library, par) {
   const address = FindSymbol(library, defObj.name || name);
   if (address) {
     const defStr = parseDefStr(defObj.result, defObj.parameters);
     const method = CreateFunction(address, defStr);
-    const callable = (...args) => CallFunction(method, ...args);
-    gcFunction.register(callable, method, callable);
-    return callable;
+    gcFunction.register(par, method, par);
+    return (...args) => CallFunction(method, ...args);
   } else if (defObj.optional) {
-    return () => throw new TypeError('bad symbol');
+    return () => {
+      throw new TypeError('bad symbol');
+    };
   } else {
     throw new TypeError('bad symbol');
   }
@@ -90,7 +91,7 @@ class UnsafeLibrary {
   constructor(filename, defMap) {
     this.#library = LoadLibrary(filename);
     for (const name in defMap) {
-      this.symbols[name] = createSymbol(defMap[name], name, this.#library);
+      this.symbols[name] = createSymbol(defMap[name], name, this.#library, this);
     }
     gcLibrary.register(this, this.#library, this);
   }
@@ -141,3 +142,26 @@ class UnsafeFnPointer {
     return CallFunction(this.#invoker, ...props);
   }
 }
+
+//debug
+(() => {
+  let a1 = new UnsafeCallback({
+    result: 'i32',
+    parameters: ['pointer', 'u64']
+  }, (hWnd, lParam) => {
+    console.log('hWnd', hWnd, 'lParam', lParam);
+    return 1;
+  });
+  let a2 = new UnsafeLibrary('user32', {
+    EnumWindows: {
+      result: 'i32',
+      parameters: ['pointer', 'u64']
+    }
+  });
+  a2.symbols.EnumWindows(a1.pointer, 3);
+  a1 = null;
+  a2 = null;
+  gc();
+  gc();
+  gc();
+})();

@@ -1,1 +1,1 @@
-"..\node\Debug\node" ".\debug\demo-ffi.js"
+"..\node\Debug\node" --expose-gc ".\debug\demo-ffi.js"

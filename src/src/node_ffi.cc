@@ -218,7 +218,7 @@ Local<Value> FFIDefinition::wrapValue
     case FFI_TYPE_UINT8:
     case FFI_TYPE_UINT16:
     case FFI_TYPE_UINT32:
-        return Uint32::NewFromUnsigned(isolate, input->uint);
+        return Uint32::NewFromUnsigned(isolate, (uint32_t)input->uint);
     case FFI_TYPE_UINT64:
         return BigInt::NewFromUnsigned(isolate, input->uint);
     case FFI_TYPE_SINT8:
