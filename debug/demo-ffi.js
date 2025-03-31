@@ -1,25 +1,15 @@
-const ffi = require('node:ffi')
-console.log(ffi)
-const lib = ffi.LoadLibrary('user32')
-console.log(lib)
-// const MessageBoxW = ffi.FindSymbol(lib, 'MessageBoxW')
-// console.log(MessageBoxW)
-// const call = ffi.CreateFunction(MessageBoxW, 'ipppI')
-// console.log(call)
-// const buff = new ArrayBuffer(10)
-// const buff2 = new Uint16Array(buff)
-// buff2[0] = '哈'.charCodeAt(0)
-// const ret = ffi.CallFunction(call, null, buff, buff, 0)
-// console.log(ret)
-const EnumWindows1 = ffi.FindSymbol(lib, 'EnumWindows')
-console.log(EnumWindows1)
-const EnumWindows2 = ffi.CreateFunction(EnumWindows1, 'ipL')
-console.log(EnumWindows2)
-const [callback1, callback2] = ffi.CreateCallback('ipL', (hWnd, lParam) => {
-  console.log(hWnd, lParam)
-  return 3
-})
-console.log(callback1, callback2)
-const ret = ffi.CallFunction(EnumWindows2, callback2, 3)
-console.log(ret)
+const {
+  CallFunction,
+  CreateCallback,
+  CreateFunction,
+  FindSymbol,
+  FreeCallback,
+  FreeFunction,
+  FreeLibrary,
+  LoadLibrary
+} = require('node:ffi')
+
+const gcCallback = new FinalizationRegistry(FreeCallback)
+const gcFunction = new FinalizationRegistry(FreeFunction)
+const gcLibrary = new FinalizationRegistry(FreeLibrary)
 

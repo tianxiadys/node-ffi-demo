@@ -40,14 +40,14 @@ you simply need to replace the corresponding files.
 ---
 Here is the system and CPU support status:
 
-|            | Windows | Linux | Mac  | Other System |
-|------------|---------|-------|------|--------------|
-| x86        | NO      | YES   |      | ToDo         |
-| x64        | YES     | YES   | YES? | ToDo         |
-| ARM32      | YES     | YES   |      | ToDo         |
-| ARM64      | YES     | YES   | YES? | ToDo         |
-| ARM-EC     | NO      |       |      |              |
-| Other Arch |         | ToDo  |      | ToDo         |
+|            | Windows | Linux | Mac | Other System |
+|------------|---------|-------|-----|--------------|
+| x86        | NO      | YES   |     | ToDo         |
+| x64        | YES     | YES   | YES | ToDo         |
+| ARM32      | YES     | YES   |     | ToDo         |
+| ARM64      | YES     | YES   | YES | ToDo         |
+| ARM-EC     | NO      |       |     |              |
+| Other Arch |         | ToDo  |     | ToDo         |
 
 1. Blank spaces in the table indicate the absence of such combinations.
    Windows does not support the fifth type of CPU,
@@ -61,20 +61,17 @@ Here is the system and CPU support status:
    and I’m not sure whether this technology is widely used.
    Undoubtedly, it presents significant challenges for FFI.
    Currently, it is not supported and likely won’t be in the future either.
-4. Unfortunately, I do not have access to a Mac device,
-   so I was unable to test this in a real environment.
-   However, it should probably work.
-5. Support for other architectures and systems will be addressed in future PRs.
+4. Support for other architectures and systems will be addressed in future PRs.
 
 ---
-If @x sees this, I would like to discuss this issue with you.
+For @aapoalas:
 It seems that a `double` type field is missing in `ffi_raw`.
 Was this intentionally designed?
 Although this issue can be resolved by forcibly casting the pointer type,
 I didn't do so because I suspect there might be some traps I'm unaware of waiting for me.
 
 ---
-If @x sees this, I would like to discuss these feature with you.
+For @atgreen:
 These two features are `UnsafeCallback.threadSafe` and the `nonblocking` option.
 They seem to work as a pair;
 at the very least, the `threadSafe` method should not be able to exist independently of `nonblocking`.
