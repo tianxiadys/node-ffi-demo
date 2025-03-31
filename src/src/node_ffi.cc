@@ -40,7 +40,7 @@ void* readAddress(Local<Value> value)
         const auto buffer = view->Buffer();
         const auto offset = view->ByteOffset();
         const auto start = buffer->Data();
-        return static_cast<char*>(start) + offset;
+        return (char*)start + offset;
     }
     return nullptr;
 }
@@ -57,9 +57,7 @@ int64_t readInt64(Local<Value> value)
     }
     if (value->IsNumber())
     {
-        return static_cast<int64_t>(
-            value.As<Number>()->Value()
-        );
+        return (int64_t)value.As<Number>()->Value();
     }
     if (value->IsBigInt())
     {
@@ -80,22 +78,13 @@ uint64_t readUInt64(Local<Value> value)
     }
     if (value->IsNumber())
     {
-        return static_cast<uint64_t>(
-            value.As<Number>()->Value()
-        );
+        return (uint64_t)value.As<Number>()->Value();
     }
     if (value->IsBigInt())
     {
         return value.As<BigInt>()->Uint64Value();
     }
     return 0;
-}
-
-float readFloat(Local<Value> value)
-{
-    return static_cast<float>(
-        readDouble(value)
-    );
 }
 
 double readDouble(Local<Value> value)
@@ -106,9 +95,7 @@ double readDouble(Local<Value> value)
     }
     if (value->IsBigInt())
     {
-        return static_cast<double>(
-            value.As<BigInt>()->Int64Value()
-        );
+        return (double)value.As<BigInt>()->Int64Value();
     }
     return 0.0;
 }
@@ -125,13 +112,6 @@ std::string readString(Isolate* isolate, Local<Value> value)
 FFILibrary::FFILibrary(const char* libPath)
     : DLib(libPath, kDefaultFlags)
 {
-}
-
-FFILibrary* FFILibrary::From(Local<Value> value)
-{
-    return static_cast<FFILibrary*>(
-        readAddress(value)
-    );
 }
 
 FFILibrary::~FFILibrary()
@@ -216,7 +196,7 @@ void FFIDefinition::readValue
         output->sint = readInt64(input);
         break;
     case FFI_TYPE_FLOAT:
-        output->flt = readFloat(input);
+        output->flt = (float)readDouble(input);
         break;
     case FFI_TYPE_POINTER:
         output->ptr = readAddress(input);
@@ -236,13 +216,13 @@ Local<Value> FFIDefinition::wrapValue
     case FFI_TYPE_UINT8:
     case FFI_TYPE_UINT16:
     case FFI_TYPE_UINT32:
-        return Uint32::New(isolate, input->uint);
+        return Uint32::NewFromUnsigned(isolate, input->uint);
     case FFI_TYPE_UINT64:
         return BigInt::NewFromUnsigned(isolate, input->uint);
     case FFI_TYPE_SINT8:
     case FFI_TYPE_SINT16:
     case FFI_TYPE_SINT32:
-        return Int32::New(isolate, input->sint);
+        return Int32::New(isolate, (int32_t)input->sint);
     case FFI_TYPE_SINT64:
         return BigInt::New(isolate, input->sint);
     case FFI_TYPE_FLOAT:
@@ -259,13 +239,6 @@ FFIFunction::FFIFunction(const char* defStr, void* address)
 {
     invoker = FFI_FN(address);
     datas = std::make_unique<ffi_raw[]>(cif.nargs);
-}
-
-FFIFunction* FFIFunction::From(Local<Value> value)
-{
-    return static_cast<FFIFunction*>(
-        readAddress(value)
-    );
 }
 
 void FFIFunction::setParam(int i, Local<Value> value)
@@ -288,18 +261,11 @@ FFICallback::FFICallback(const char* defStr)
     {
         UNREACHABLE("ffi_closure_alloc Failed");
     }
-    pfc = static_cast<ffi_raw_closure*>(alloc);
+    pfc = (ffi_raw_closure*)alloc;
     if (ffi_prep_raw_closure(pfc, &cif, RawCallback, this) != FFI_OK)
     {
         UNREACHABLE("ffi_prep_raw_closure Failed");
     }
-}
-
-FFICallback* FFICallback::From(Local<Value> value)
-{
-    return static_cast<FFICallback*>(
-        readAddress(value)
-    );
 }
 
 void FFICallback::setCallback(Isolate* isolate, Local<Value> value)
@@ -345,7 +311,7 @@ FFICallback::~FFICallback()
 void CallFunction(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto function = FFIFunction::From(args[0]);
+    const auto function = (FFIFunction*)readAddress(args[0]);
     const auto length = args.Length();
     for (int i = 1; i < length; i++)
     {
@@ -398,7 +364,7 @@ void LoadLibrary(const FunctionCallbackInfo<Value>& args)
 void FindSymbol(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto library = FFILibrary::From(args[0]);
+    const auto library = (FFILibrary*)readAddress(args[0]);
     const auto symbol = readString(isolate, args[1]);
     const auto address = library->GetSymbolAddress(symbol.c_str());
     if (address)
@@ -410,17 +376,17 @@ void FindSymbol(const FunctionCallbackInfo<Value>& args)
 
 void FreeCallback(const FunctionCallbackInfo<Value>& args)
 {
-    delete FFICallback::From(args[0]);
+    delete (FFICallback*)readAddress(args[0]);
 }
 
 void FreeFunction(const FunctionCallbackInfo<Value>& args)
 {
-    delete FFIFunction::From(args[0]);
+    delete (FFIFunction*)readAddress(args[0]);
 }
 
 void FreeLibrary(const FunctionCallbackInfo<Value>& args)
 {
-    delete FFILibrary::From(args[0]);
+    delete (FFILibrary*)readAddress(args[0]);
 }
 
 void Initialize(Local<Object> obj, Local<Value>, Local<Context> ctx, void*)

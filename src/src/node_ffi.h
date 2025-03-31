@@ -29,15 +29,12 @@ using v8::Value;
 void* readAddress(Local<Value> value);
 int64_t readInt64(Local<Value> value);
 uint64_t readUInt64(Local<Value> value);
-float readFloat(Local<Value> value);
 double readDouble(Local<Value> value);
 std::string readString(Isolate* isolate, Local<Value> value);
 
 class FFILibrary : public DLib
 {
 public:
-    static FFILibrary* From(Local<Value> value);
-
     explicit FFILibrary(const char* libPath);
     ~FFILibrary();
 };
@@ -58,8 +55,6 @@ public:
 class FFIFunction : public FFIDefinition
 {
 public:
-    static FFIFunction* From(Local<Value> value);
-
     explicit FFIFunction(const char* defStr, void* address);
     void setParam(int i, Local<Value> value);
     Local<Value> doInvoke(Isolate* isolate);
@@ -72,7 +67,6 @@ class FFICallback : public FFIDefinition
 {
 public:
     static constexpr auto FCS = sizeof(ffi_raw_closure);
-    static FFICallback* From(Local<Value> value);
     static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
 
     explicit FFICallback(const char* defStr);
