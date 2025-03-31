@@ -280,26 +280,24 @@ void FFICallback::setCallback(Isolate* isolate, Local<Value> value)
 void FFICallback::RawCallback
 (ffi_cif* cif, void* result, ffi_raw* args, void* data)
 {
-    const auto self = static_cast<FFICallback*>(data);
     const auto isolate = Isolate::GetCurrent();
-    const auto params = std::make_unique<Local<Value>[]>(cif->nargs);
-    for (unsigned i = 0; i < cif->nargs; i++)
+    const auto self = (FFICallback*)data;
+    const auto length = (int)cif->nargs;
+    const auto params = std::make_unique<Local<Value>[]>(length);
+    for (int i = 0; i < length; i++)
     {
         params[i] = self->wrapValue(i + 1, isolate, args + i);
     }
     const auto function = self->callback.Get(isolate);
     const auto context = function->GetCreationContextChecked(isolate);
-    const auto result1 = Undefined(isolate);
-    const auto result2 = static_cast<ffi_raw*>(result);
-    printf("before:result1:%lld\n", readInt64(result1));
-    printf("before:result2:%lld\n", result2->uint);
-    const auto result3 = function->Call(isolate, context, result1, cif->nargs, params.get());
-    printf("after:result1:%lld\n", readInt64(result1));
-    Local<Value> result4;
-    result3.ToLocal(&result4);
-    printf("after:result4:%lld\n", readInt64(result4));
-    self->readValue(0, result1, result2);
-    printf("after:result2:%lld\n", result2->uint);
+    const auto temp1 = Undefined(isolate);
+    const auto temp2 = function->Call(
+        isolate, context, temp1, length, params.get());
+    Local<Value> temp3;
+    if (temp2.ToLocal(&temp3))
+    {
+        self->readValue(0, temp3, (ffi_raw*)result);
+    }
 }
 
 FFICallback::~FFICallback()
@@ -311,8 +309,8 @@ FFICallback::~FFICallback()
 void CallFunction(const FunctionCallbackInfo<Value>& args)
 {
     const auto isolate = args.GetIsolate();
-    const auto function = (FFIFunction*)readAddress(args[0]);
     const auto length = args.Length();
+    const auto function = (FFIFunction*)readAddress(args[0]);
     for (int i = 1; i < length; i++)
     {
         function->setParam(i, args[i]);
