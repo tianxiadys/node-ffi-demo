@@ -1035,11 +1035,11 @@ parser.add_argument('--use-ccache-win',
     default=None,
     help='Use ccache for compiling on Windows. ')
 
-parser.add_argument("--enable-ffi",
+parser.add_argument("--with-ffi",
     action="store_true",
-    dest="enable_ffi",
+    dest="with_ffi",
     default=False,
-    help="Enable FFI module.")
+    help="build with FFI support")
 
 (options, args) = parser.parse_known_args()
 
@@ -1464,7 +1464,7 @@ def configure_node(o):
   o['variables']['error_on_warn'] = b(options.error_on_warn)
   o['variables']['suppress_all_error_on_warn'] = b(options.suppress_all_error_on_warn)
   o['variables']['use_prefix_to_find_headers'] = b(options.use_prefix_to_find_headers)
-  o['variables']['node_use_ffi'] = b(options.enable_ffi)
+  o['variables']['node_use_ffi'] = b(options.with_ffi)
 
   host_arch = host_arch_win() if os.name == 'nt' else host_arch_cc()
   target_arch = options.dest_cpu or host_arch
