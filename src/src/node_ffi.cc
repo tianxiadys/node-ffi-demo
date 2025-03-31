@@ -293,11 +293,8 @@ void FFICallback::RawCallback
     const auto temp1 = Undefined(isolate);
     const auto temp2 = function->Call(
         isolate, context, temp1, length, params.get());
-    Local<Value> temp3;
-    if (temp2.ToLocal(&temp3))
-    {
-        self->readValue(0, temp3, (ffi_raw*)result);
-    }
+    const auto temp3 = temp2.FromMaybe(temp1);
+    self->readValue(0, temp3, (ffi_raw*)result);
 }
 
 FFICallback::~FFICallback()

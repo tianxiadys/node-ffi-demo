@@ -19,175 +19,33 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-'use strict'
+'use strict';
 
-module.exports = internalBinding('ffi')
+const {
+  CallFunction,
+  CreateCallback,
+  CreateFunction,
+  FindSymbol,
+  FreeCallback,
+  FreeFunction,
+  FreeLibrary,
+  LoadLibrary
+} = internalBinding('ffi');
+const {
+  bits
+} = internalBinding('config');
 
-// function loadFunction(library, name, def) {
-//   const parsed = parseDefinition(def)
-//   const address = ffiFindFunction(library, def.name || name)
-//   return (...args) => ffiDownCall(address, parsed, args)
-// }
-
-//
-// const {
-//   ffiCreateBuffer,
-//   ffiCreateCallback,
-//   ffiDownCall,
-//   ffiFindFunction,
-//   ffiFreeCallback,
-//   ffiFreeLibrary,
-//   ffiGetAddress,
-//   ffiIs64,
-//   ffiIsLE,
-//   ffiIsWin,
-//   ffiLoadLibrary
-// } = require('node:ffi-internal')
-//
-// function parseMode(mode) {
-//   switch (mode) {
-//     case 'cdecl':
-//       return 'c'
-//     case 'default':
-//       return ':'
-//     case 'fastcall':
-//       return (ffiIsWin ? 'F' : 'f')
-//     case 'thiscall':
-//       return (ffiIsWin ? '+' : '#')
-//     case 'stdcall':
-//       return 's'
-//     default:
-//       throw new TypeError(`unsupported calling convention: ${mode}`)
-//   }
-// }
-//
-// function parseType(type) {
-//   switch (type) {
-//     case 'void':
-//       return 'v'
-//     case 'bool':
-//       return 'B'
-//     case 'u8':
-//       return 'C'
-//     case 'i8':
-//       return 'c'
-//     case 'u16':
-//       return 'S'
-//     case 'i16':
-//       return 's'
-//     case 'u32':
-//       return 'I'
-//     case 'i32':
-//       return 'i'
-//     case 'u64':
-//       return 'L'
-//     case 'i64':
-//       return 'l'
-//     case 'f32':
-//       return 'f'
-//     case 'f64':
-//       return 'd'
-//     case 'usize':
-//       return (ffiIs64 ? 'L' : 'I')
-//     case 'isize':
-//       return (ffiIs64 ? 'l' : 'i')
-//     case 'pointer':
-//     case 'buffer':
-//     case 'function':
-//       return 'p'
-//     default:
-//       throw new TypeError(`unsupported parameter type: ${type}`)
-//   }
-// }
-//
-// function parseTypeList(params) {
-//   return params.map(parseType).join('')
-// }
-//
-// function parseDefinition(def) {
-//   return {
-//     mode: parseMode(def.mode || 'default'),
-//     result: parseType(def.result || 'void'),
-//     signature: parseTypeList(def.parameters || [])
-//   }
-// }
-//
-//
-// function pointerFunction(pointer, def) {
-//   const parsed = parseDefinition(def)
-//   const address = ffiGetAddress(pointer)
-//   return (...args) => ffiDownCall(address, parsed, args)
-// }
-//
-// function copyBuffer() {
-// }
-//
-// function createArrayBuffer() {
-// }
-//
-// function createBuffer(pointer) {
-// }
-//
-// function createCallback(callback, def) {
-//   const parsed = parseDefinition(def)
-//   return ffiCreateCallback(parsed, callback)
-// }
-//
-// function createString() {
-// }
-//
-// function freeCallback(pointer) {
-//   return ffiFreeCallback(pointer)
-// }
-//
-// function freeLibrary(library) {
-//   return ffiFreeLibrary(library)
-// }
-//
-//
-// class UnsafeCallback {
-//   callback
-//   definition
-//   pointer
-//
-//   constructor(definition, callback) {
-//     this.definition = definition
-//     this.callback = callback
-//     this.pointer = createCallback(callback, definition)
-//   }
-//
-//   close() {
-//     freeCallback(this.pointer)
-//   }
-//
-//   ref() {
-//     throw new Error('error')
-//   }
-//
-//   unref() {
-//     throw new Error('error')
-//   }
-//
-//   static threadSafe(definition, callback) {
-//     throw new Error('error')
-//   }
-// }
-//
-// class UnsafeFnPointer {
-//   definition
-//   pointer
-//   #invoker
-//
-//   constructor(pointer, definition) {
-//     this.pointer = pointer
-//     this.definition = definition
-//     this.#invoker = pointerFunction(pointer, definition)
-//   }
-//
-//   call(...props) {
-//     return this.#invoker(...props)
-//   }
-// }
+module.exports = {
+  CallFunction,
+  CreateCallback,
+  CreateFunction,
+  FindSymbol,
+  FreeCallback,
+  FreeFunction,
+  FreeLibrary,
+  LoadLibrary,
+  bits
+};
 //
 // class UnsafePointer {
 //   #rawPtr
