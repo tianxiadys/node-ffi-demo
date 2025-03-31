@@ -438,8 +438,8 @@
     }, {
       'defines': [ 'HAVE_AMARO=0' ]
     }],
-    ['node_enable_ffi=="true"', {
-      'defines': ['NODE_ENABLE_FFI=1'],
+    ['node_use_ffi=="true"', {
+      'defines': ['HAVE_FFI=1'],
       'sources': ['src/node_ffi.cc'],
       'dependencies': ['./deps/libffi/libffi.gyp:libffi'],
     }],
