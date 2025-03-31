@@ -7,9 +7,9 @@ const {
   FreeFunction,
   FreeLibrary,
   LoadLibrary
-} = require('node:ffi')
+} = require('node:ffi');
 
-const gcCallback = new FinalizationRegistry(FreeCallback)
-const gcFunction = new FinalizationRegistry(FreeFunction)
-const gcLibrary = new FinalizationRegistry(FreeLibrary)
+const gcCallback = new FinalizationRegistry(FreeCallback);
+const gcFunction = new FinalizationRegistry(FreeFunction);
+const gcLibrary = new FinalizationRegistry(FreeLibrary);
 
