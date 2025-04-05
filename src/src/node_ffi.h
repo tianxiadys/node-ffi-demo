@@ -10,7 +10,7 @@ namespace node::ffi {
 using binding::DLib;
 using v8::Array;
 using v8::ArrayBuffer;
-using v8::ArrayBufferView;
+using v8::BackingStore;
 using v8::BigInt;
 using v8::Boolean;
 using v8::Context;
@@ -31,6 +31,7 @@ int64_t readInt64(Local<Value> value);
 uint64_t readUInt64(Local<Value> value);
 double readDouble(Local<Value> value);
 std::string readString(Isolate* isolate, Local<Value> value);
+void ffiCallback(ffi_cif* cif, void* ret, ffi_raw* args, void* hint);
 
 class FFILibrary : public DLib {
  public:
@@ -63,10 +64,10 @@ class FFIInvoker : public FFIDefinition {
 class FFICallback : public FFIDefinition {
  public:
   static constexpr auto RCS = sizeof(ffi_raw_closure);
-  static void doCallback(ffi_cif*, void*, ffi_raw*, void*);
 
   explicit FFICallback(const char* defStr);
   void setCallback(Isolate* isolate, Local<Value> value);
+  void doCallback(ffi_raw* result, int argc, const ffi_raw* args) const;
   ~FFICallback();
 
   ffi_raw_closure* frc{};

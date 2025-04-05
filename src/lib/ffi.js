@@ -210,124 +210,17 @@ class UnsafePointer {
   }
 }
 
-//
-// class UnsafePointerView {
-//   pointer;
-//   #buffer;
-//
-//   constructor(pointer) {
-//     this.pointer = pointer;
-//     this.#buffer = CreateBuffer(pointer);
-//   }
-//
-//   getBool(offset) {
-//     return this.#buffer.readInt8(offset) !== 0;
-//   }
-//
-//   getInt8(offset) {
-//     return this.#buffer.readInt8(offset);
-//   }
-//
-//   getInt16(offset) {
-//     if (isLE) {
-//       return this.#buffer.readInt16LE(offset);
-//     } else {
-//       return this.#buffer.readInt16BE(offset);
-//     }
-//   }
-//
-//   getInt32(offset) {
-//     if (isLE) {
-//       return this.#buffer.readInt32LE(offset);
-//     } else {
-//       return this.#buffer.readInt32BE(offset);
-//     }
-//   }
-//
-//   getBigInt64(offset) {
-//     if (isLE) {
-//       return this.#buffer.readBigInt64LE(offset);
-//     } else {
-//       return this.#buffer.readBigInt64BE(offset);
-//     }
-//   }
-//
-//   getUint8(offset) {
-//     return this.#buffer.readUint8(offset);
-//   }
-//
-//   getUint16(offset) {
-//     if (isLE) {
-//       return this.#buffer.readUint16LE(offset);
-//     } else {
-//       return this.#buffer.readUint16BE(offset);
-//     }
-//   }
-//
-//   getUint32(offset) {
-//     if (isLE) {
-//       return this.#buffer.readUint32LE(offset);
-//     } else {
-//       return this.#buffer.readUint32BE(offset);
-//     }
-//   }
-//
-//   getBigUint64(offset) {
-//     if (isLE) {
-//       return this.#buffer.readBigUint64LE(offset);
-//     } else {
-//       return this.#buffer.readBigUint64BE(offset);
-//     }
-//   }
-//
-//   getFloat32(offset) {
-//     if (isLE) {
-//       return this.#buffer.readFloatLE(offset);
-//     } else {
-//       return this.#buffer.readFloatBE(offset);
-//     }
-//   }
-//
-//   getFloat64(offset) {
-//     if (isLE) {
-//       return this.#buffer.readDoubleLE(offset);
-//     } else {
-//       return this.#buffer.readDoubleBE(offset);
-//     }
-//   }
-//
-//   getPointer(offset) {
-//     return UnsafePointer.offset(this.pointer, offset);
-//   }
-//
-//   copyInto(destination, offset) {
-//     return copyBuffer(this.pointer, destination, offset);
-//   }
-//
-//   getArrayBuffer(byteLength, offset) {
-//     return CreateBuffer(this.pointer, byteLength, offset);
-//   }
-//
-//   getCString(offset) {
-//     return createString(this.pointer, offset);
-//   }
-//
-//   static copyInto(pointer, destination, offset) {
-//     return copyBuffer(pointer, destination, offset);
-//   }
-//
-//   static getArrayBuffer(pointer, byteLength, offset) {
-//     return CreateBuffer(pointer, byteLength, offset);
-//   }
-//
-//   static getCString(pointer, offset) {
-//     return createString(pointer, offset);
-//   }
-// }
+class UnsafePointerView {
+  static getArrayBuffer(pointer, byteLength, offset) {
+    const address = UnsafePointer.offset(pointer, offset);
+    return CreateBuffer(address, byteLength || 2 ** 32);
+  }
+}
 
 module.exports = {
   dlopen,
   UnsafeCallback,
   UnsafeFnPointer,
-  UnsafePointer
+  UnsafePointer,
+  UnsafePointerView
 };

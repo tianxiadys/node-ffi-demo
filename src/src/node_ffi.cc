@@ -91,6 +91,11 @@ std::string readString(Isolate* isolate, const Local<Value> value) {
   return "";
 }
 
+void ffiCallback(ffi_cif* cif, void* ret, ffi_raw* args, void* hint) {
+  const auto self = (FFICallback*)hint;
+  self->doCallback((ffi_raw*)ret, (int)cif->nargs, args);
+}
+
 FFILibrary::FFILibrary(const char* path) : DLib(path, kDefaultFlags) {}
 
 FFILibrary::~FFILibrary() {
@@ -222,12 +227,11 @@ Local<Value> FFIInvoker::doInvoke(Isolate* isolate) {
 }
 
 FFICallback::FFICallback(const char* defStr) : FFIDefinition(defStr) {
-  const auto alloc = ffi_closure_alloc(RCS, &address);
-  if (!alloc) {
+  frc = (ffi_raw_closure*)ffi_closure_alloc(RCS, &address);
+  if (!frc) {
     UNREACHABLE("ffi_closure_alloc Failed");
   }
-  frc = (ffi_raw_closure*)alloc;
-  if (ffi_prep_raw_closure(frc, &cif, doCallback, this) != FFI_OK) {
+  if (ffi_prep_raw_closure(frc, &cif, ffiCallback, this) != FFI_OK) {
     UNREACHABLE("ffi_prep_raw_closure Failed");
   }
 }
@@ -239,25 +243,22 @@ void FFICallback::setCallback(Isolate* isolate, const Local<Value> value) {
   }
 }
 
-void FFICallback::doCallback(ffi_cif* cif,
-                             void* result,
-                             ffi_raw* args,
-                             void* data) {
+void FFICallback::doCallback(ffi_raw* result,
+                             const int argc,
+                             const ffi_raw* args) const {
   const auto isolate = Isolate::GetCurrent();
-  const auto self = (FFICallback*)data;
-  const auto length = (int)cif->nargs;
-  const auto params = std::make_unique<Local<Value>[]>(length);
-  for (int i = 0; i < length; i++) {
-    params[i] = self->wrapValue(i + 1, isolate, args + i);
+  const auto params = std::make_unique<Local<Value>[]>(argc);
+  for (int i = 0; i < argc; i++) {
+    params[i] = wrapValue(i + 1, isolate, args + i);
   }
-  const auto function = self->callback.Get(isolate);
+  const auto function = callback.Get(isolate);
   const auto context = function->GetCreationContextChecked(isolate);
   const auto global = Undefined(isolate);
   const auto return1 =
-      function->Call(isolate, context, global, length, params.get());
+      function->Call(isolate, context, global, argc, params.get());
   Local<Value> return2;
   if (return1.ToLocal(&return2)) {
-    self->readValue(0, return2, (ffi_raw*)result);
+    readValue(0, return2, result);
   }
 }
 
@@ -280,8 +281,9 @@ void CreateBuffer(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
   const auto address = readAddress(args[0]);
   const auto length = readUInt64(args[1]);
-  args.GetReturnValue().Set(
-      Buffer::New(isolate, (char*)address, length).ToLocalChecked());
+  auto store = ArrayBuffer::NewBackingStore(
+      address, length, BackingStore::EmptyDeleter, nullptr);
+  args.GetReturnValue().Set(ArrayBuffer::New(isolate, std::move(store)));
 }
 
 void CreateCallback(const FunctionCallbackInfo<Value>& args) {
