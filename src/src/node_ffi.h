@@ -6,13 +6,13 @@
 #include "node_binding.h"
 #include "v8.h"
 
-namespace node::ffi
-{
+namespace node::ffi {
 using binding::DLib;
 using v8::Array;
 using v8::ArrayBuffer;
 using v8::ArrayBufferView;
 using v8::BigInt;
+using v8::Boolean;
 using v8::Context;
 using v8::External;
 using v8::Function;
@@ -32,52 +32,48 @@ uint64_t readUInt64(Local<Value> value);
 double readDouble(Local<Value> value);
 std::string readString(Isolate* isolate, Local<Value> value);
 
-class FFILibrary : public DLib
-{
-public:
-    explicit FFILibrary(const char* libPath);
-    ~FFILibrary();
+class FFILibrary : public DLib {
+ public:
+  explicit FFILibrary(const char* libPath);
+  ~FFILibrary();
 };
 
-class FFIDefinition
-{
-public:
-    static constexpr auto ABI = FFI_DEFAULT_ABI;
+class FFIDefinition {
+ public:
+  static constexpr auto ABI = FFI_DEFAULT_ABI;
 
-    explicit FFIDefinition(const char* defStr);
-    void readValue(int i, Local<Value> input, ffi_raw* output) const;
-    Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input) const;
+  explicit FFIDefinition(const char* defStr);
+  void readValue(int i, Local<Value> input, ffi_raw* output) const;
+  Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input) const;
 
-    ffi_cif cif{};
-    std::unique_ptr<ffi_type*[]> types;
+  ffi_cif cif{};
+  std::unique_ptr<ffi_type*[]> types;
 };
 
-class FFIFunction : public FFIDefinition
-{
-public:
-    explicit FFIFunction(const char* defStr, void* address);
-    void setParam(int i, Local<Value> value);
-    Local<Value> doInvoke(Isolate* isolate);
+class FFIFunction : public FFIDefinition {
+ public:
+  explicit FFIFunction(const char* defStr, void* address);
+  void setParam(int i, Local<Value> value);
+  Local<Value> doInvoke(Isolate* isolate);
 
-    void (*invoker)(){};
-    std::unique_ptr<ffi_raw[]> datas;
+  void (*invoker)(){};
+  std::unique_ptr<ffi_raw[]> datas;
 };
 
-class FFICallback : public FFIDefinition
-{
-public:
-    static constexpr auto RCS = sizeof(ffi_raw_closure);
-    static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
+class FFICallback : public FFIDefinition {
+ public:
+  static constexpr auto RCS = sizeof(ffi_raw_closure);
+  static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
 
-    explicit FFICallback(const char* defStr);
-    void setCallback(Isolate* isolate, Local<Value> value);
-    ~FFICallback();
+  explicit FFICallback(const char* defStr);
+  void setCallback(Isolate* isolate, Local<Value> value);
+  ~FFICallback();
 
-    ffi_raw_closure* frc{};
-    void* address{};
-    Persistent<Function> callback;
+  ffi_raw_closure* frc{};
+  void* address{};
+  Persistent<Function> callback;
 };
-} // namespace node::ffi
+}  // namespace node::ffi
 
-#endif // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
-#endif // SRC_NODE_FFI_H_
+#endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+#endif  // SRC_NODE_FFI_H_

@@ -31,11 +31,10 @@ const {
   FreeFunction,
   FreeLibrary,
   GetAddress,
-  LoadLibrary
+  LoadLibrary,
+  SysIs64,
+  SysIsLE
 } = internalBinding('ffi');
-const {
-  bits
-} = internalBinding('config');
 
 module.exports = {
   CallFunction,
@@ -48,5 +47,6 @@ module.exports = {
   FreeLibrary,
   GetAddress,
   LoadLibrary,
-  bits
+  SysIs64,
+  SysIsLE
 };

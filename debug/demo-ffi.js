@@ -9,12 +9,15 @@ const {
   FreeLibrary,
   GetAddress,
   LoadLibrary,
-  bits
+  SysIs64,
+  SysIsLE
 } = require('node:ffi');
 
 const gcCallback = new FinalizationRegistry(FreeCallback);
 const gcFunction = new FinalizationRegistry(FreeFunction);
 const gcLibrary = new FinalizationRegistry(FreeLibrary);
+const is64 = SysIs64();
+const isLE = SysIsLE();
 
 function parseType(type) {
   switch (type) {
@@ -40,9 +43,9 @@ function parseType(type) {
     case 'f32':
       return 'f';
     case 'usize':
-      return (bits === 64 ? 'L' : 'I');
+      return (is64 ? 'L' : 'I');
     case 'isize':
-      return (bits === 64 ? 'l' : 'i');
+      return (is64 ? 'l' : 'i');
     case 'pointer':
     case 'buffer':
     case 'function':
@@ -137,18 +140,8 @@ class UnsafeFnPointer {
 }
 
 class UnsafePointer {
-  #rawPtr;
-
-  constructor(value) {
-    if (typeof value === 'bigint') {
-      this.#rawPtr = value;
-    } else {
-      this.#rawPtr = GetAddress(value);
-    }
-  }
-
   static create(value) {
-    return new UnsafePointer(value);
+    return UnsafePointer.value(value);
   }
 
   static equals(value1, value2) {
@@ -158,24 +151,20 @@ class UnsafePointer {
   }
 
   static of(value) {
-    if (value instanceof UnsafePointer) {
-      return value;
-    } else {
-      return new UnsafePointer(value);
-    }
+    return UnsafePointer.value(value);
   }
 
   static offset(pointer, offset) {
     const int1 = UnsafePointer.value(pointer);
     const int2 = BigInt(offset);
-    return new UnsafePointer(int1 + int2);
+    return int1 + int2;
   }
 
-  static value(pointer) {
-    if (pointer instanceof UnsafePointer) {
-      return pointer.#rawPtr;
+  static value(value) {
+    if (typeof value === 'bigint') {
+      return value;
     } else {
-      return GetAddress(pointer);
+      return GetAddress(value);
     }
   }
 }
@@ -186,7 +175,7 @@ class UnsafePointerView {
 
   constructor(pointer) {
     this.pointer = pointer;
-    this.#buffer = createBuffer(pointer);
+    this.#buffer = CreateBuffer(pointer);
   }
 
   getBool(offset) {
@@ -198,7 +187,7 @@ class UnsafePointerView {
   }
 
   getInt16(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readInt16LE(offset);
     } else {
       return this.#buffer.readInt16BE(offset);
@@ -206,7 +195,7 @@ class UnsafePointerView {
   }
 
   getInt32(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readInt32LE(offset);
     } else {
       return this.#buffer.readInt32BE(offset);
@@ -214,7 +203,7 @@ class UnsafePointerView {
   }
 
   getBigInt64(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readBigInt64LE(offset);
     } else {
       return this.#buffer.readBigInt64BE(offset);
@@ -226,7 +215,7 @@ class UnsafePointerView {
   }
 
   getUint16(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readUint16LE(offset);
     } else {
       return this.#buffer.readUint16BE(offset);
@@ -234,7 +223,7 @@ class UnsafePointerView {
   }
 
   getUint32(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readUint32LE(offset);
     } else {
       return this.#buffer.readUint32BE(offset);
@@ -242,7 +231,7 @@ class UnsafePointerView {
   }
 
   getBigUint64(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readBigUint64LE(offset);
     } else {
       return this.#buffer.readBigUint64BE(offset);
@@ -250,7 +239,7 @@ class UnsafePointerView {
   }
 
   getFloat32(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readFloatLE(offset);
     } else {
       return this.#buffer.readFloatBE(offset);
@@ -258,7 +247,7 @@ class UnsafePointerView {
   }
 
   getFloat64(offset) {
-    if (ffiIsLE) {
+    if (isLE) {
       return this.#buffer.readDoubleLE(offset);
     } else {
       return this.#buffer.readDoubleBE(offset);
@@ -274,7 +263,7 @@ class UnsafePointerView {
   }
 
   getArrayBuffer(byteLength, offset) {
-    return createArrayBuffer(this.pointer, byteLength, offset);
+    return CreateBuffer(this.pointer, byteLength, offset);
   }
 
   getCString(offset) {
@@ -286,7 +275,7 @@ class UnsafePointerView {
   }
 
   static getArrayBuffer(pointer, byteLength, offset) {
-    return createArrayBuffer(pointer, byteLength, offset);
+    return CreateBuffer(pointer, byteLength, offset);
   }
 
   static getCString(pointer, offset) {
