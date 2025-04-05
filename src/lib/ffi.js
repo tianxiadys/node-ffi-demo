@@ -22,6 +22,10 @@
 'use strict';
 
 const {
+  Error,
+  FinalizationRegistry
+} = primordials;
+const {
   CallInvoker,
   CreateBuffer,
   CreateCallback,
@@ -35,8 +39,11 @@ const {
   SysIs64,
   SysIsLE
 } = internalBinding('ffi');
+const {
+  clearInterval,
+  setInterval
+} = require('timers');
 
-const gcCallback = new FinalizationRegistry(FreeCallback);
 const gcInvoker = new FinalizationRegistry(FreeInvoker);
 const is64 = SysIs64();
 const isLE = SysIsLE();
@@ -97,6 +104,14 @@ function dlopen(filename, defMap) {
   return new UnsafeLibrary(filename, defMap);
 }
 
+function getAddress(value) {
+  if (typeof value === 'bigint') {
+    return value;
+  } else {
+    return GetAddress(value);
+  }
+}
+
 class UnsafeLibrary {
   symbols;
   #library;
@@ -127,20 +142,33 @@ class UnsafeCallback {
   definition;
   pointer;
   #callback;
+  #timeout;
 
   constructor(defObj, callback) {
-    this.definition = defObj;
+    const defStr = parseDefStr(defObj);
+    [this.#callback, this.pointer] = CreateCallback(defStr, callback);
     this.callback = callback;
-    const defStr = parseDefStr(defObj.result, defObj.parameters);
-    const result = CreateCallback(defStr, callback);
-    this.#callback = result[0];
-    this.pointer = UnsafePointer.create(result[1]);
-    gcCallback.register(this, this.#callback, this);
+    this.definition = defObj;
+    this.#timeout = 0;
   }
 
   close() {
     FreeCallback(this.#callback);
-    gcCallback.unregister(this);
+  }
+
+  ref() {
+    if (!this.#timeout) {
+      this.#timeout = setInterval(() => 0, 2 ** 30);
+    }
+    return this;
+  }
+
+  unref() {
+    if (this.#timeout) {
+      clearInterval(this.#timeout);
+      this.#timeout = 0;
+    }
+    return this;
   }
 }
 
@@ -156,36 +184,32 @@ class UnsafeFnPointer {
   }
 }
 
-//
-// class UnsafePointer {
-//   static create(value) {
-//     return UnsafePointer.value(value);
-//   }
-//
-//   static equals(value1, value2) {
-//     const int1 = UnsafePointer.value(value1);
-//     const int2 = UnsafePointer.value(value2);
-//     return int1 === int2;
-//   }
-//
-//   static of(value) {
-//     return UnsafePointer.value(value);
-//   }
-//
-//   static offset(pointer, offset) {
-//     const int1 = UnsafePointer.value(pointer);
-//     const int2 = BigInt(offset);
-//     return int1 + int2;
-//   }
-//
-//   static value(value) {
-//     if (typeof value === 'bigint') {
-//       return value;
-//     } else {
-//       return GetAddress(value);
-//     }
-//   }
-// }
+class UnsafePointer {
+  static create(value) {
+    return getAddress(value);
+  }
+
+  static equals(value1, value2) {
+    const int1 = getAddress(value1);
+    const int2 = getAddress(value2);
+    return int1 === int2;
+  }
+
+  static of(value) {
+    return getAddress(value);
+  }
+
+  static offset(pointer, offset) {
+    const int1 = getAddress(pointer);
+    const int2 = BigInt(offset);
+    return int1 + int2;
+  }
+
+  static value(value) {
+    return getAddress(value);
+  }
+}
+
 //
 // class UnsafePointerView {
 //   pointer;
@@ -304,5 +328,6 @@ class UnsafeFnPointer {
 module.exports = {
   dlopen,
   UnsafeCallback,
-  UnsafeFnPointer
+  UnsafeFnPointer,
+  UnsafePointer
 };

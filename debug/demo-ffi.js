@@ -1,38 +1,21 @@
 const {
-  CallInvoker,
-  CreateBuffer,
-  CreateCallback,
-  CreateInvoker,
-  FindSymbol,
-  FreeCallback,
-  FreeInvoker,
-  FreeLibrary,
-  GetAddress,
-  LoadLibrary,
-  SysIs64,
-  SysIsLE
+  dlopen,
+  UnsafeCallback,
+  UnsafeFnPointer
 } = require('node:ffi');
 
-//debug
-(() => {
-  let a1 = new UnsafeCallback({
+let a1 = new UnsafeCallback({
+  result: 'i32',
+  parameters: ['pointer', 'u64']
+}, (hWnd, lParam) => {
+  console.log('hWnd', hWnd, 'lParam', lParam);
+  return 1n;
+});
+let a2 = dlopen('user32', {
+  EnumWindows: {
     result: 'i32',
     parameters: ['pointer', 'u64']
-  }, (hWnd, lParam) => {
-    console.log('hWnd', hWnd, 'lParam', lParam);
-    return 1;
-  });
-  let a2 = new UnsafeLibrary('user32', {
-    EnumWindows: {
-      result: 'i32',
-      parameters: ['pointer', 'u64']
-    }
-  });
-  a2.symbols.EnumWindows(UnsafePointer.value(a1.pointer), 3);
-  console.log(a1);
-  a1 = null;
-  a2 = null;
-  gc();
-  gc();
-  gc();
-})();
+  }
+});
+a2.symbols.EnumWindows(a1.pointer, 3);
+console.log(a1);
