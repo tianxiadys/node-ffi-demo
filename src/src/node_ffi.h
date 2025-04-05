@@ -44,7 +44,7 @@ class FFIDefinition {
 
   explicit FFIDefinition(const char* defStr);
   void readValue(int i, Local<Value> input, ffi_raw* output) const;
-  Local<Value> wrapValue(int i, Isolate* isolate, ffi_raw* input) const;
+  Local<Value> wrapValue(int i, Isolate* isolate, const ffi_raw* input) const;
 
   ffi_cif cif{};
   std::unique_ptr<ffi_type*[]> types;
@@ -52,7 +52,7 @@ class FFIDefinition {
 
 class FFIFunction : public FFIDefinition {
  public:
-  explicit FFIFunction(const char* defStr, void* address);
+  explicit FFIFunction(const char* defStr, const void* address);
   void setParam(int i, Local<Value> value);
   Local<Value> doInvoke(Isolate* isolate);
 

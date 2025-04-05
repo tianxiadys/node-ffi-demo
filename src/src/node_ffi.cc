@@ -21,12 +21,12 @@
 
 #if HAVE_FFI
 
+#include "node_ffi.h"
 #include "env-inl.h"
 #include "node_buffer.h"
-#include "node_ffi.h"
 
 namespace node::ffi {
-void* readAddress(Local<Value> value) {
+void* readAddress(const Local<Value> value) {
   if (value->IsExternal()) {
     return value.As<External>()->Value();
   }
@@ -42,7 +42,7 @@ void* readAddress(Local<Value> value) {
   return nullptr;
 }
 
-int64_t readInt64(Local<Value> value) {
+int64_t readInt64(const Local<Value> value) {
   if (value->IsInt32()) {
     return value.As<Int32>()->Value();
   }
@@ -58,7 +58,7 @@ int64_t readInt64(Local<Value> value) {
   return 0;
 }
 
-uint64_t readUInt64(Local<Value> value) {
+uint64_t readUInt64(const Local<Value> value) {
   if (value->IsUint32()) {
     return value.As<Uint32>()->Value();
   }
@@ -74,7 +74,7 @@ uint64_t readUInt64(Local<Value> value) {
   return 0;
 }
 
-double readDouble(Local<Value> value) {
+double readDouble(const Local<Value> value) {
   if (value->IsNumber()) {
     return value.As<Number>()->Value();
   }
@@ -84,16 +84,14 @@ double readDouble(Local<Value> value) {
   return 0.0;
 }
 
-std::string readString(Isolate* isolate, Local<Value> value) {
+std::string readString(Isolate* isolate, const Local<Value> value) {
   if (value->IsString()) {
     return Utf8Value(isolate, value).ToString();
   }
   return "";
 }
 
-FFILibrary::FFILibrary(const char* libPath)
-  : DLib(libPath, kDefaultFlags) {
-}
+FFILibrary::FFILibrary(const char* libPath) : DLib(libPath, kDefaultFlags) {}
 
 FFILibrary::~FFILibrary() {
   Close();
@@ -106,7 +104,7 @@ FFIDefinition::FFIDefinition(const char* defStr) {
   }
   types = std::make_unique<ffi_type*[]>(length);
   for (int i = 0; i < length; i++) {
-    //These field definitions refer to dyncall
+    // These field definitions refer to dyncall
     switch (defStr[i]) {
       case 'v':
         types[i] = &ffi_type_void;
@@ -150,8 +148,8 @@ FFIDefinition::FFIDefinition(const char* defStr) {
   }
 }
 
-void FFIDefinition::readValue(int i,
-                              Local<Value> input,
+void FFIDefinition::readValue(const int i,
+                              const Local<Value> input,
                               ffi_raw* output) const {
   switch (types[i]->type) {
     case FFI_TYPE_VOID:
@@ -180,9 +178,9 @@ void FFIDefinition::readValue(int i,
   }
 }
 
-Local<Value> FFIDefinition::wrapValue(int i,
+Local<Value> FFIDefinition::wrapValue(const int i,
                                       Isolate* isolate,
-                                      ffi_raw* input) const {
+                                      const ffi_raw* input) const {
   switch (types[i]->type) {
     case FFI_TYPE_VOID:
       return Undefined(isolate);
@@ -207,13 +205,13 @@ Local<Value> FFIDefinition::wrapValue(int i,
   }
 }
 
-FFIFunction::FFIFunction(const char* defStr, void* address)
-  : FFIDefinition(defStr) {
+FFIFunction::FFIFunction(const char* defStr, const void* address)
+    : FFIDefinition(defStr) {
   invoker = FFI_FN(address);
   datas = std::make_unique<ffi_raw[]>(cif.nargs);
 }
 
-void FFIFunction::setParam(int i, Local<Value> value) {
+void FFIFunction::setParam(const int i, const Local<Value> value) {
   readValue(i, value, &datas[i - 1]);
 }
 
@@ -223,8 +221,7 @@ Local<Value> FFIFunction::doInvoke(Isolate* isolate) {
   return wrapValue(0, isolate, &result);
 }
 
-FFICallback::FFICallback(const char* defStr)
-  : FFIDefinition(defStr) {
+FFICallback::FFICallback(const char* defStr) : FFIDefinition(defStr) {
   const auto alloc = ffi_closure_alloc(RCS, &address);
   if (!alloc) {
     UNREACHABLE("ffi_closure_alloc Failed");
@@ -235,7 +232,7 @@ FFICallback::FFICallback(const char* defStr)
   }
 }
 
-void FFICallback::setCallback(Isolate* isolate, Local<Value> value) {
+void FFICallback::setCallback(Isolate* isolate, const Local<Value> value) {
   if (value->IsFunction()) {
     const auto function = value.As<Function>();
     callback.Reset(isolate, function);
@@ -276,17 +273,15 @@ void CallFunction(const FunctionCallbackInfo<Value>& args) {
   for (int i = 1; i < length; i++) {
     function->setParam(i, args[i]);
   }
-  args.GetReturnValue()
-      .Set(function->doInvoke(isolate));
+  args.GetReturnValue().Set(function->doInvoke(isolate));
 }
 
 void CreateBuffer(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
   const auto address = readAddress(args[0]);
   const auto length = readUInt64(args[1]);
-  args.GetReturnValue()
-      .Set(Buffer::New(isolate, (char*)address, length)
-          .ToLocalChecked());
+  args.GetReturnValue().Set(
+      Buffer::New(isolate, (char*)address, length).ToLocalChecked());
 }
 
 void CreateCallback(const FunctionCallbackInfo<Value>& args) {
@@ -294,12 +289,9 @@ void CreateCallback(const FunctionCallbackInfo<Value>& args) {
   const auto defStr = readString(isolate, args[0]);
   const auto callback = new FFICallback(defStr.c_str());
   callback->setCallback(isolate, args[1]);
-  Local<Value> result[] = {
-      External::New(isolate, callback),
-      External::New(isolate, callback->address)
-  };
-  args.GetReturnValue()
-      .Set(Array::New(isolate, result, 2));
+  Local<Value> result[] = {External::New(isolate, callback),
+                           External::New(isolate, callback->address)};
+  args.GetReturnValue().Set(Array::New(isolate, result, 2));
 }
 
 void CreateFunction(const FunctionCallbackInfo<Value>& args) {
@@ -307,8 +299,7 @@ void CreateFunction(const FunctionCallbackInfo<Value>& args) {
   const auto address = readAddress(args[0]);
   const auto defStr = readString(isolate, args[1]);
   const auto function = new FFIFunction(defStr.c_str(), address);
-  args.GetReturnValue()
-      .Set(External::New(isolate, function));
+  args.GetReturnValue().Set(External::New(isolate, function));
 }
 
 void FindSymbol(const FunctionCallbackInfo<Value>& args) {
@@ -317,8 +308,7 @@ void FindSymbol(const FunctionCallbackInfo<Value>& args) {
   const auto symbol = readString(isolate, args[1]);
   const auto address = library->GetSymbolAddress(symbol.c_str());
   if (address) {
-    args.GetReturnValue()
-        .Set(External::New(isolate, address));
+    args.GetReturnValue().Set(External::New(isolate, address));
   }
 }
 
@@ -337,8 +327,8 @@ void FreeLibrary(const FunctionCallbackInfo<Value>& args) {
 void GetAddress(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
   const auto address = readAddress(args[0]);
-  args.GetReturnValue()
-      .Set(BigInt::NewFromUnsigned(isolate, (uint64_t)address));
+  args.GetReturnValue().Set(
+      BigInt::NewFromUnsigned(isolate, (uint64_t)address));
 }
 
 void LoadLibrary(const FunctionCallbackInfo<Value>& args) {
@@ -346,8 +336,7 @@ void LoadLibrary(const FunctionCallbackInfo<Value>& args) {
   const auto path = readString(isolate, args[0]);
   const auto library = new FFILibrary(path.c_str());
   if (library->Open()) {
-    args.GetReturnValue()
-        .Set(External::New(isolate, library));
+    args.GetReturnValue().Set(External::New(isolate, library));
   } else {
     delete library;
   }
@@ -355,17 +344,18 @@ void LoadLibrary(const FunctionCallbackInfo<Value>& args) {
 
 void SysIs64(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
-  args.GetReturnValue()
-      .Set(Boolean::New(isolate, sizeof(void*) == 8));
+  args.GetReturnValue().Set(Boolean::New(isolate, sizeof(void*) == 8));
 }
 
 void SysIsLE(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
-  args.GetReturnValue()
-      .Set(Boolean::New(isolate, IsLittleEndian()));
+  args.GetReturnValue().Set(Boolean::New(isolate, IsLittleEndian()));
 }
 
-void Initialize(Local<Object> obj, Local<Value>, Local<Context> ctx, void*) {
+void Initialize(const Local<Object> obj,
+                const Local<Value>,
+                const Local<Context> ctx,
+                void*) {
   SetMethod(ctx, obj, "CallFunction", CallFunction);
   SetMethod(ctx, obj, "CreateBuffer", CreateBuffer);
   SetMethod(ctx, obj, "CreateCallback", CreateCallback);
@@ -394,9 +384,9 @@ void Register(ExternalReferenceRegistry* registry) {
   registry->Register(SysIs64);
   registry->Register(SysIsLE);
 }
-} // namespace node::ffi
+}  // namespace node::ffi
 
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(ffi, node::ffi::Initialize)
 NODE_BINDING_EXTERNAL_REFERENCE(ffi, node::ffi::Register)
 
-#endif // HAVE_FFI
+#endif  // HAVE_FFI
