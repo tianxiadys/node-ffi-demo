@@ -63,7 +63,7 @@ class FFIFunction : public FFIDefinition {
 class FFICallback : public FFIDefinition {
  public:
   static constexpr auto RCS = sizeof(ffi_raw_closure);
-  static void RawCallback(ffi_cif*, void*, ffi_raw*, void*);
+  static void doCallback(ffi_cif*, void*, ffi_raw*, void*);
 
   explicit FFICallback(const char* defStr);
   void setCallback(Isolate* isolate, Local<Value> value);

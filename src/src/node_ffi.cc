@@ -227,7 +227,7 @@ FFICallback::FFICallback(const char* defStr) : FFIDefinition(defStr) {
     UNREACHABLE("ffi_closure_alloc Failed");
   }
   frc = (ffi_raw_closure*)alloc;
-  if (ffi_prep_raw_closure(frc, &cif, RawCallback, this) != FFI_OK) {
+  if (ffi_prep_raw_closure(frc, &cif, doCallback, this) != FFI_OK) {
     UNREACHABLE("ffi_prep_raw_closure Failed");
   }
 }
@@ -239,10 +239,10 @@ void FFICallback::setCallback(Isolate* isolate, const Local<Value> value) {
   }
 }
 
-void FFICallback::RawCallback(ffi_cif* cif,
-                              void* result,
-                              ffi_raw* args,
-                              void* data) {
+void FFICallback::doCallback(ffi_cif* cif,
+                             void* result,
+                             ffi_raw* args,
+                             void* data) {
   const auto isolate = Isolate::GetCurrent();
   const auto self = (FFICallback*)data;
   const auto length = (int)cif->nargs;
