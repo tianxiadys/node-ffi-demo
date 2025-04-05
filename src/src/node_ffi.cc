@@ -91,7 +91,7 @@ std::string readString(Isolate* isolate, const Local<Value> value) {
   return "";
 }
 
-FFILibrary::FFILibrary(const char* libPath) : DLib(libPath, kDefaultFlags) {}
+FFILibrary::FFILibrary(const char* path) : DLib(path, kDefaultFlags) {}
 
 FFILibrary::~FFILibrary() {
   Close();
@@ -205,17 +205,17 @@ Local<Value> FFIDefinition::wrapValue(const int i,
   }
 }
 
-FFIFunction::FFIFunction(const char* defStr, const void* address)
+FFIInvoker::FFIInvoker(const char* defStr, const void* address)
     : FFIDefinition(defStr) {
   invoker = FFI_FN(address);
   datas = std::make_unique<ffi_raw[]>(cif.nargs);
 }
 
-void FFIFunction::setParam(const int i, const Local<Value> value) {
+void FFIInvoker::setParam(const int i, const Local<Value> value) {
   readValue(i, value, &datas[i - 1]);
 }
 
-Local<Value> FFIFunction::doInvoke(Isolate* isolate) {
+Local<Value> FFIInvoker::doInvoke(Isolate* isolate) {
   ffi_raw result;
   ffi_raw_call(&cif, invoker, &result, datas.get());
   return wrapValue(0, isolate, &result);
@@ -266,14 +266,14 @@ FFICallback::~FFICallback() {
   callback.Reset();
 }
 
-void CallFunction(const FunctionCallbackInfo<Value>& args) {
+void CallInvoker(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
   const auto length = args.Length();
-  const auto function = (FFIFunction*)readAddress(args[0]);
+  const auto invoker = (FFIInvoker*)readAddress(args[0]);
   for (int i = 1; i < length; i++) {
-    function->setParam(i, args[i]);
+    invoker->setParam(i, args[i]);
   }
-  args.GetReturnValue().Set(function->doInvoke(isolate));
+  args.GetReturnValue().Set(invoker->doInvoke(isolate));
 }
 
 void CreateBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -294,12 +294,12 @@ void CreateCallback(const FunctionCallbackInfo<Value>& args) {
   args.GetReturnValue().Set(Array::New(isolate, result, 2));
 }
 
-void CreateFunction(const FunctionCallbackInfo<Value>& args) {
+void CreateInvoker(const FunctionCallbackInfo<Value>& args) {
   const auto isolate = args.GetIsolate();
   const auto address = readAddress(args[0]);
   const auto defStr = readString(isolate, args[1]);
-  const auto function = new FFIFunction(defStr.c_str(), address);
-  args.GetReturnValue().Set(External::New(isolate, function));
+  const auto invoker = new FFIInvoker(defStr.c_str(), address);
+  args.GetReturnValue().Set(External::New(isolate, invoker));
 }
 
 void FindSymbol(const FunctionCallbackInfo<Value>& args) {
@@ -316,8 +316,8 @@ void FreeCallback(const FunctionCallbackInfo<Value>& args) {
   delete (FFICallback*)readAddress(args[0]);
 }
 
-void FreeFunction(const FunctionCallbackInfo<Value>& args) {
-  delete (FFIFunction*)readAddress(args[0]);
+void FreeInvoker(const FunctionCallbackInfo<Value>& args) {
+  delete (FFIInvoker*)readAddress(args[0]);
 }
 
 void FreeLibrary(const FunctionCallbackInfo<Value>& args) {
@@ -356,13 +356,13 @@ void Initialize(const Local<Object> obj,
                 const Local<Value>,
                 const Local<Context> ctx,
                 void*) {
-  SetMethod(ctx, obj, "CallFunction", CallFunction);
+  SetMethod(ctx, obj, "CallInvoker", CallInvoker);
   SetMethod(ctx, obj, "CreateBuffer", CreateBuffer);
   SetMethod(ctx, obj, "CreateCallback", CreateCallback);
-  SetMethod(ctx, obj, "CreateFunction", CreateFunction);
+  SetMethod(ctx, obj, "CreateInvoker", CreateInvoker);
   SetMethod(ctx, obj, "FindSymbol", FindSymbol);
   SetMethod(ctx, obj, "FreeCallback", FreeCallback);
-  SetMethod(ctx, obj, "FreeFunction", FreeFunction);
+  SetMethod(ctx, obj, "FreeInvoker", FreeInvoker);
   SetMethod(ctx, obj, "FreeLibrary", FreeLibrary);
   SetMethod(ctx, obj, "GetAddress", GetAddress);
   SetMethod(ctx, obj, "LoadLibrary", LoadLibrary);
@@ -371,13 +371,13 @@ void Initialize(const Local<Object> obj,
 }
 
 void Register(ExternalReferenceRegistry* registry) {
-  registry->Register(CallFunction);
+  registry->Register(CallInvoker);
   registry->Register(CreateBuffer);
   registry->Register(CreateCallback);
-  registry->Register(CreateFunction);
+  registry->Register(CreateInvoker);
   registry->Register(FindSymbol);
   registry->Register(FreeCallback);
-  registry->Register(FreeFunction);
+  registry->Register(FreeInvoker);
   registry->Register(FreeLibrary);
   registry->Register(GetAddress);
   registry->Register(LoadLibrary);

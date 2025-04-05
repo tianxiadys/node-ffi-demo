@@ -1,11 +1,11 @@
 const {
-  CallFunction,
+  CallInvoker,
   CreateBuffer,
   CreateCallback,
-  CreateFunction,
+  CreateInvoker,
   FindSymbol,
   FreeCallback,
-  FreeFunction,
+  FreeInvoker,
   FreeLibrary,
   GetAddress,
   LoadLibrary,
@@ -14,8 +14,7 @@ const {
 } = require('node:ffi');
 
 const gcCallback = new FinalizationRegistry(FreeCallback);
-const gcFunction = new FinalizationRegistry(FreeFunction);
-const gcLibrary = new FinalizationRegistry(FreeLibrary);
+const gcInvoker = new FinalizationRegistry(FreeInvoker);
 const is64 = SysIs64();
 const isLE = SysIsLE();
 
@@ -55,29 +54,20 @@ function parseType(type) {
   }
 }
 
-function parseDefStr(result, parameters) {
+function parseDefStr(defObj) {
   const temp = [];
-  temp.push(parseType(result));
-  for (const type of parameters) {
-    temp.push(parseType(type));
+  temp.push(parseType(defObj.result));
+  for (const param of defObj.parameters) {
+    temp.push(parseType(param));
   }
   return temp.join('');
 }
 
-function createSymbol(defObj, name, library, par) {
-  const address = FindSymbol(library, defObj.name || name);
-  if (address) {
-    const defStr = parseDefStr(defObj.result, defObj.parameters);
-    const method = CreateFunction(address, defStr);
-    gcFunction.register(par, method, par);
-    return (...args) => CallFunction(method, ...args);
-  } else if (defObj.optional) {
-    return () => {
-      throw new Error('bad symbol');
-    };
-  } else {
-    throw new Error('bad symbol');
-  }
+function createInvoker(defObj, address, refer) {
+  const defStr = parseDefStr(defObj);
+  const invoker = CreateInvoker(address, defStr);
+  gcInvoker.register(refer, invoker, refer);
+  return (...args) => CallInvoker(invoker, ...args);
 }
 
 class UnsafeLibrary {
@@ -87,17 +77,24 @@ class UnsafeLibrary {
   constructor(filename, defMap) {
     this.#library = LoadLibrary(filename);
     for (const name in defMap) {
-      this.symbols[name] = createSymbol(defMap[name], name, this.#library, this);
+      const defObj = defMap[name];
+      const address = FindSymbol(this.#library, defObj.name || name);
+      if (address) {
+        this.symbols[name] = createInvoker(defObj, address, this);
+      } else if (defObj.optional) {
+        return () => {
+          throw new Error('bad symbol');
+        };
+      } else {
+        throw new Error('bad symbol');
+      }
     }
-    gcLibrary.register(this, this.#library, this);
   }
 
   close() {
     FreeLibrary(this.#library);
-    gcLibrary.unregister(this);
   }
 }
-
 
 class UnsafeCallback {
   callback;
@@ -105,10 +102,10 @@ class UnsafeCallback {
   pointer;
   #callback;
 
-  constructor(definition, callback) {
-    this.definition = definition;
+  constructor(defObj, callback) {
+    this.definition = defObj;
     this.callback = callback;
-    const defStr = parseDefStr(definition.result, definition.parameters);
+    const defStr = parseDefStr(defObj.result, defObj.parameters);
     const result = CreateCallback(defStr, callback);
     this.#callback = result[0];
     this.pointer = UnsafePointer.create(result[1]);
@@ -122,166 +119,161 @@ class UnsafeCallback {
 }
 
 class UnsafeFnPointer {
+  call;
   definition;
   pointer;
-  #invoker;
 
-  constructor(pointer, definition) {
+  constructor(pointer, defObj) {
     this.pointer = pointer;
-    this.definition = definition;
-    const defStr = parseDefStr(definition.result, definition.parameters);
-    this.#invoker = CreateFunction(pointer, defStr);
-    gcFunction.register(this, this.#invoker, this);
-  }
-
-  call(...props) {
-    return CallFunction(this.#invoker, ...props);
+    this.definition = defObj;
+    this.call = createInvoker(defObj, pointer, this);
   }
 }
 
-class UnsafePointer {
-  static create(value) {
-    return UnsafePointer.value(value);
-  }
-
-  static equals(value1, value2) {
-    const int1 = UnsafePointer.value(value1);
-    const int2 = UnsafePointer.value(value2);
-    return int1 === int2;
-  }
-
-  static of(value) {
-    return UnsafePointer.value(value);
-  }
-
-  static offset(pointer, offset) {
-    const int1 = UnsafePointer.value(pointer);
-    const int2 = BigInt(offset);
-    return int1 + int2;
-  }
-
-  static value(value) {
-    if (typeof value === 'bigint') {
-      return value;
-    } else {
-      return GetAddress(value);
-    }
-  }
-}
-
-class UnsafePointerView {
-  pointer;
-  #buffer;
-
-  constructor(pointer) {
-    this.pointer = pointer;
-    this.#buffer = CreateBuffer(pointer);
-  }
-
-  getBool(offset) {
-    return this.#buffer.readInt8(offset) !== 0;
-  }
-
-  getInt8(offset) {
-    return this.#buffer.readInt8(offset);
-  }
-
-  getInt16(offset) {
-    if (isLE) {
-      return this.#buffer.readInt16LE(offset);
-    } else {
-      return this.#buffer.readInt16BE(offset);
-    }
-  }
-
-  getInt32(offset) {
-    if (isLE) {
-      return this.#buffer.readInt32LE(offset);
-    } else {
-      return this.#buffer.readInt32BE(offset);
-    }
-  }
-
-  getBigInt64(offset) {
-    if (isLE) {
-      return this.#buffer.readBigInt64LE(offset);
-    } else {
-      return this.#buffer.readBigInt64BE(offset);
-    }
-  }
-
-  getUint8(offset) {
-    return this.#buffer.readUint8(offset);
-  }
-
-  getUint16(offset) {
-    if (isLE) {
-      return this.#buffer.readUint16LE(offset);
-    } else {
-      return this.#buffer.readUint16BE(offset);
-    }
-  }
-
-  getUint32(offset) {
-    if (isLE) {
-      return this.#buffer.readUint32LE(offset);
-    } else {
-      return this.#buffer.readUint32BE(offset);
-    }
-  }
-
-  getBigUint64(offset) {
-    if (isLE) {
-      return this.#buffer.readBigUint64LE(offset);
-    } else {
-      return this.#buffer.readBigUint64BE(offset);
-    }
-  }
-
-  getFloat32(offset) {
-    if (isLE) {
-      return this.#buffer.readFloatLE(offset);
-    } else {
-      return this.#buffer.readFloatBE(offset);
-    }
-  }
-
-  getFloat64(offset) {
-    if (isLE) {
-      return this.#buffer.readDoubleLE(offset);
-    } else {
-      return this.#buffer.readDoubleBE(offset);
-    }
-  }
-
-  getPointer(offset) {
-    return UnsafePointer.offset(this.pointer, offset);
-  }
-
-  copyInto(destination, offset) {
-    return copyBuffer(this.pointer, destination, offset);
-  }
-
-  getArrayBuffer(byteLength, offset) {
-    return CreateBuffer(this.pointer, byteLength, offset);
-  }
-
-  getCString(offset) {
-    return createString(this.pointer, offset);
-  }
-
-  static copyInto(pointer, destination, offset) {
-    return copyBuffer(pointer, destination, offset);
-  }
-
-  static getArrayBuffer(pointer, byteLength, offset) {
-    return CreateBuffer(pointer, byteLength, offset);
-  }
-
-  static getCString(pointer, offset) {
-    return createString(pointer, offset);
-  }
-}
+//
+// class UnsafePointer {
+//   static create(value) {
+//     return UnsafePointer.value(value);
+//   }
+//
+//   static equals(value1, value2) {
+//     const int1 = UnsafePointer.value(value1);
+//     const int2 = UnsafePointer.value(value2);
+//     return int1 === int2;
+//   }
+//
+//   static of(value) {
+//     return UnsafePointer.value(value);
+//   }
+//
+//   static offset(pointer, offset) {
+//     const int1 = UnsafePointer.value(pointer);
+//     const int2 = BigInt(offset);
+//     return int1 + int2;
+//   }
+//
+//   static value(value) {
+//     if (typeof value === 'bigint') {
+//       return value;
+//     } else {
+//       return GetAddress(value);
+//     }
+//   }
+// }
+//
+// class UnsafePointerView {
+//   pointer;
+//   #buffer;
+//
+//   constructor(pointer) {
+//     this.pointer = pointer;
+//     this.#buffer = CreateBuffer(pointer);
+//   }
+//
+//   getBool(offset) {
+//     return this.#buffer.readInt8(offset) !== 0;
+//   }
+//
+//   getInt8(offset) {
+//     return this.#buffer.readInt8(offset);
+//   }
+//
+//   getInt16(offset) {
+//     if (isLE) {
+//       return this.#buffer.readInt16LE(offset);
+//     } else {
+//       return this.#buffer.readInt16BE(offset);
+//     }
+//   }
+//
+//   getInt32(offset) {
+//     if (isLE) {
+//       return this.#buffer.readInt32LE(offset);
+//     } else {
+//       return this.#buffer.readInt32BE(offset);
+//     }
+//   }
+//
+//   getBigInt64(offset) {
+//     if (isLE) {
+//       return this.#buffer.readBigInt64LE(offset);
+//     } else {
+//       return this.#buffer.readBigInt64BE(offset);
+//     }
+//   }
+//
+//   getUint8(offset) {
+//     return this.#buffer.readUint8(offset);
+//   }
+//
+//   getUint16(offset) {
+//     if (isLE) {
+//       return this.#buffer.readUint16LE(offset);
+//     } else {
+//       return this.#buffer.readUint16BE(offset);
+//     }
+//   }
+//
+//   getUint32(offset) {
+//     if (isLE) {
+//       return this.#buffer.readUint32LE(offset);
+//     } else {
+//       return this.#buffer.readUint32BE(offset);
+//     }
+//   }
+//
+//   getBigUint64(offset) {
+//     if (isLE) {
+//       return this.#buffer.readBigUint64LE(offset);
+//     } else {
+//       return this.#buffer.readBigUint64BE(offset);
+//     }
+//   }
+//
+//   getFloat32(offset) {
+//     if (isLE) {
+//       return this.#buffer.readFloatLE(offset);
+//     } else {
+//       return this.#buffer.readFloatBE(offset);
+//     }
+//   }
+//
+//   getFloat64(offset) {
+//     if (isLE) {
+//       return this.#buffer.readDoubleLE(offset);
+//     } else {
+//       return this.#buffer.readDoubleBE(offset);
+//     }
+//   }
+//
+//   getPointer(offset) {
+//     return UnsafePointer.offset(this.pointer, offset);
+//   }
+//
+//   copyInto(destination, offset) {
+//     return copyBuffer(this.pointer, destination, offset);
+//   }
+//
+//   getArrayBuffer(byteLength, offset) {
+//     return CreateBuffer(this.pointer, byteLength, offset);
+//   }
+//
+//   getCString(offset) {
+//     return createString(this.pointer, offset);
+//   }
+//
+//   static copyInto(pointer, destination, offset) {
+//     return copyBuffer(pointer, destination, offset);
+//   }
+//
+//   static getArrayBuffer(pointer, byteLength, offset) {
+//     return CreateBuffer(pointer, byteLength, offset);
+//   }
+//
+//   static getCString(pointer, offset) {
+//     return createString(pointer, offset);
+//   }
+// }
 
 //debug
 (() => {

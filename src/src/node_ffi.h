@@ -34,7 +34,7 @@ std::string readString(Isolate* isolate, Local<Value> value);
 
 class FFILibrary : public DLib {
  public:
-  explicit FFILibrary(const char* libPath);
+  explicit FFILibrary(const char* path);
   ~FFILibrary();
 };
 
@@ -50,9 +50,9 @@ class FFIDefinition {
   std::unique_ptr<ffi_type*[]> types;
 };
 
-class FFIFunction : public FFIDefinition {
+class FFIInvoker : public FFIDefinition {
  public:
-  explicit FFIFunction(const char* defStr, const void* address);
+  explicit FFIInvoker(const char* defStr, const void* address);
   void setParam(int i, Local<Value> value);
   Local<Value> doInvoke(Isolate* isolate);
 

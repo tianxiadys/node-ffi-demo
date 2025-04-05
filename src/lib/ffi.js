@@ -22,13 +22,13 @@
 'use strict';
 
 const {
-  CallFunction,
+  CallInvoker,
   CreateBuffer,
   CreateCallback,
-  CreateFunction,
+  CreateInvoker,
   FindSymbol,
   FreeCallback,
-  FreeFunction,
+  FreeInvoker,
   FreeLibrary,
   GetAddress,
   LoadLibrary,
@@ -37,13 +37,13 @@ const {
 } = internalBinding('ffi');
 
 module.exports = {
-  CallFunction,
+  CallInvoker,
   CreateBuffer,
   CreateCallback,
-  CreateFunction,
+  CreateInvoker,
   FindSymbol,
   FreeCallback,
-  FreeFunction,
+  FreeInvoker,
   FreeLibrary,
   GetAddress,
   LoadLibrary,
